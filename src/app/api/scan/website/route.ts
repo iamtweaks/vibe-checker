@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       findings: result.findings,
       severityCounts: result.severityCounts,
       scannedAt: new Date().toISOString(),
+      scanDuration: result.scanDuration,
     })
   } catch (error: any) {
     return NextResponse.json(
