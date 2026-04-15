@@ -1,2 +1,2 @@
-[providers]
-nodejs = "nodejs_20"
+[providers.nodejs]
+version = "20"
