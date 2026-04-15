@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Shield, Zap, Globe, Github, Terminal, ChevronRight, Lock, ArrowRight, FileCode, Sparkles, AlertTriangle, CheckCircle, Clock, Bug, BarChart3, Users, Star } from 'lucide-react'
+import { downloadPDF } from '@/lib/pdf'
+import { Shield, Zap, Globe, Github, Terminal, ChevronRight, Lock, ArrowRight, FileCode, Sparkles, AlertTriangle, CheckCircle, Clock, Bug, BarChart3, Users, Star, Download, FileText } from 'lucide-react'
 
 type ScanType = 'github' | 'website'
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info'
@@ -399,7 +400,7 @@ function Scanner() {
                     </div>
                   </div>
                   <div className="text-sm text-slate-500 font-mono">{result.targetUrl}</div>
-                  <div className="flex gap-2 ml-auto">
+                  <div className="flex gap-2 ml-auto items-center">
                     {Object.entries(result.severityCounts).map(([sev, count]) => (
                       count > 0 && (
                         <span key={sev} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${SEVERITY_STYLES[sev as Severity].bg} ${SEVERITY_STYLES[sev as Severity].text}`}>
@@ -408,6 +409,13 @@ function Scanner() {
                         </span>
                       )
                     ))}
+                    <button
+                      onClick={() => downloadPDF(result)}
+                      className="ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium hover:bg-slate-800 transition"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Download PDF Report
+                    </button>
                   </div>
                 </div>
                 
