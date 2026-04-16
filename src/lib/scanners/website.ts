@@ -495,6 +495,137 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     },
     remediation: 'Validate and sanitize all URL parameters. Use allowlists for permitted destinations. Never forward requests to user-controlled URLs.',
   },
+
+  // OWASP Top 10 2025 - NEW A03: Software Supply Chain Failures
+  {
+    id: 'suspicious-cdn',
+    title: 'Unverified Third-Party Script (Supply Chain Risk)',
+    description: 'External script loaded from an unknown source without Subresource Integrity. Attackers may compromise CDNs to inject malware (OWASP A03:2025).',
+    severity: 'high',
+    cwe: 'CWE-1359',
+    owasp: 'A03:2025',
+    check: ($: cheerio.CheerioAPI, _url: string) => {
+      const scripts = $('script[src]').filter((_, el) => {
+        const src = $(el).attr('src') || ''
+        return src.startsWith('http') && !$(el).attr('integrity')
+      }).length > 0
+      return scripts
+    },
+    remediation: 'Use Subresource Integrity (SRI) for all external scripts. Verify CDN providers. Monitor for supply chain compromises.',
+  },
+
+  // OWASP Top 10 2025 - NEW A10: Mishandling of Exceptional Conditions
+  {
+    id: 'error-stack-exposed',
+    title: 'Exposed Error/Stack Information (OWASP A10:2025)',
+    description: 'Debug or error information found in the page. Exposing stack traces, error details, or framework version information helps attackers identify vulnerabilities (OWASP A10:2025 - Mishandling of Exceptional Conditions).',
+    severity: 'high',
+    cwe: 'CWE-209',
+    owasp: 'A10:2025',
+    check: ($: cheerio.CheerioAPI, url: string) => {
+      const bodyText = $('body').text().toLowerCase()
+      const errorPatterns = [
+        /stack[\s-]?trace/i,
+        /error\s+in\s+line\s+\d+/i,
+        /exception\s+in\s+thread/i,
+        /at\s+[a-zA-Z0-9_$]+\.[a-zA-Z0-9_$]+\(/i,
+        /java\.io\.|\.class\.java/i,
+        /node\.js|__filename|__dirname/i,
+        /traceback\s*\(most\s*recent\s*call\s*last\)/i,
+        /warning\s+deprecated/i,
+        /fatal\s+error/i,
+        /syntaxerror/i,
+        /referenceerror/i,
+        /typeerror/i,
+      ]
+      const hasErrorContent = errorPatterns.some(p => p.test(bodyText))
+      const debugUrls = /(\/debug|\/trace|\/actuator|\/_debug|\/error|\/exception)/i.test(url)
+      return hasErrorContent || debugUrls
+    },
+    remediation: 'Disable debug mode in production. Return generic error messages to users while logging details server-side. Remove stack traces from HTTP responses. Implement proper error boundaries (React ErrorBoundary) and global exception handlers.',
+  },
+  {
+    id: 'missing-error-boundary',
+    title: 'Missing Error Boundaries (OWASP A10:2025)',
+    description: 'No React ErrorBoundary found. Unhandled component errors can crash the entire app and expose error information to users.',
+    severity: 'medium',
+    cwe: 'CWE-755',
+    owasp: 'A10:2025',
+    check: ($: cheerio.CheerioAPI, _url: string) => {
+      const html = $.html().toLowerCase()
+      const hasErrorBoundary = /errorboundary|<errorboundary|componentdidcatch|getderivedstatefromerror/i.test(html)
+      const hasReactApp = /data-react|/i.test(html) || $('script[src*="react"]').length > 0
+      return hasReactApp && !hasErrorBoundary
+    },
+    remediation: 'Implement React ErrorBoundary components to catch and handle render errors gracefully. Use componentDidCatch or getDerivedStateFromError. This prevents app crashes from exposing error details.',
+  },
+  {
+    id: 'missing-coop',
+    title: 'Cross-Origin-Opener-Policy (COOP) Header Missing (OWASP A05:2025)',
+    description: 'COOP header not set. Without COOP, your page can be opened by cross-origin documents in the same browsing context group, enabling Spectre-style attacks.',
+    severity: 'medium',
+    cwe: 'CWE-1021',
+    owasp: 'A05:2025',
+    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
+      return !headers['cross-origin-opener-policy']
+    },
+    remediation: 'Add Cross-Origin-Opener-Policy: same-origin header to prevent cross-origin documents from accessing your window.',
+  },
+  {
+    id: 'missing-corp',
+    title: 'Cross-Origin-Resource-Policy (CORP) Header Missing (OWASP A05:2025)',
+    description: 'CORP header not set. Without CORP, your resources can be loaded by other origins, enabling clickjacking and data theft.',
+    severity: 'medium',
+    cwe: 'CWE-1021',
+    owasp: 'A05:2025',
+    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
+      return !headers['cross-origin-resource-policy'] && !headers['cross-origin-resource-policy']
+    },
+    remediation: 'Add Cross-Origin-Resource-Policy: same-origin or cross-origin header based on your resource loading needs.',
+  },
+  {
+    id: 'missing-coep',
+    title: 'Cross-Origin-Embedder-Policy (COEP) Header Missing (OWASP A05:2025)',
+    description: 'COEP header not set. Without COEP, cross-origin resources without CORP/COOP headers can be embedded, blocking access to features like SharedArrayBuffer.',
+    severity: 'low',
+    cwe: 'CWE-1021',
+    owasp: 'A05:2025',
+    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
+      return !headers['cross-origin-embedder-policy']
+    },
+    remediation: 'Add Cross-Origin-Embedder-Policy: require-corp header if you need cross-origin isolation (required for SharedArrayBuffer, performance.measureMemory).',
+  },
+  {
+    id: 'permissions-policy-weak',
+    title: 'Weak Permissions-Policy Header (OWASP A05:2025)',
+    description: 'Permissions-Policy is either missing or allows risky browser features. Unused features like camera, microphone, or geolocation should be disabled.',
+    severity: 'low',
+    cwe: 'CWE-16',
+    owasp: 'A05:2025',
+    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
+      const pp = headers['permissions-policy'] || headers['feature-policy'] || ''
+      // Flag if missing OR if it allows camera/mic/geolocation without explicit restriction
+      if (!pp) return true
+      const riskyPerms = ['camera=(', 'microphone=(', 'geolocation=(', 'gyroscope=(', 'magnetometer=(']
+      return riskyPerms.some(p => pp.includes(p + '"') || pp.includes(p + '\'')) || pp.includes('*')
+    },
+    remediation: 'Set Permissions-Policy to disable unused browser features: Permissions-Policy: camera=(), microphone=(), geolocation=(), gyroscope=(), magnetometer=()',
+  },
+  {
+    id: 'fail-open',
+    title: 'Potential Fail-Open Condition (OWASP A10:2025)',
+    description: 'Authentication or authorization logic may fail open, allowing access when it should be denied. This is a critical logic flaw in error handling (OWASP A10:2025).',
+    severity: 'critical',
+    cwe: 'CWE-836',
+    owasp: 'A10:2025',
+    check: ($: cheerio.CheerioAPI, url: string) => {
+      // Look for patterns suggesting auth bypass in URL
+      const authUrls = /(\/admin|\/dashboard|\/settings|\/profile|\/user|\/account)/i.test(url)
+      const failOpenPatterns = /(\/auth\/bypass|\/skip|\/guest|\/anonymous|\/public)/i.test(url)
+      return authUrls && failOpenPatterns
+    },
+    remediation: 'Review authentication/authorization logic for fail-open conditions. Ensure access is denied by default. Use explicit allowlists for permitted access.',
+  },
 ]
 
 export async function scanWebsite(url: string): Promise<WebsiteScanResult> {

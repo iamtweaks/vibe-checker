@@ -146,7 +146,7 @@ function Hero() {
         <FadeIn>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 mb-8">
             <Sparkles className="w-4 h-4" />
-            <span>50+ Security Checks • OWASP Top 10 Coverage</span>
+            <span>65+ Security Checks • OWASP Top 10 2025 Coverage • Supply Chain & Error Handling</span>
           </div>
         </FadeIn>
         <FadeIn delay={100}>
@@ -185,9 +185,9 @@ function Stats() {
       <div className="max-w-5xl mx-auto px-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { value: 5600, label: 'Apps Scanned', suffix: '+' },
-            { value: 2000, label: 'Vulnerabilities Found', suffix: '+' },
-            { value: 50, label: 'Security Checks', suffix: '+' },
+            { value: 6200, label: 'Apps Scanned', suffix: '+' },
+            { value: 3180, label: 'Vulnerabilities Found', suffix: '+' },
+            { value: 65, label: 'Security Checks', suffix: '+' },
             { value: 100, label: 'Free Forever', suffix: '%' },
           ].map((stat, i) => (
             <FadeIn key={i} delay={i * 100}>
@@ -227,9 +227,9 @@ function RealityCheck() {
         <FadeIn delay={100}>
           <div className="grid md:grid-cols-3 gap-6 mb-10">
             {[
-              { grade: 'F', score: 3, title: 'Booking App', stack: 'Supabase + Lovable', issues: '.env committed, No RLS policies, 7 warnings', color: 'red' },
-              { grade: 'F', score: 28, title: 'SaaS Dashboard', stack: 'Firebase + Cursor', issues: 'API keys exposed, .gitignore missing .env', color: 'red' },
-              { grade: 'C', score: 73, title: 'E-commerce', stack: 'Lovable + Stripe', issues: 'Missing CSP headers, .env in repo', color: 'yellow' },
+              { grade: 'F', score: 3, title: 'Booking App', stack: 'Supabase + Lovable', issues: 'Service role key in .env committed, No RLS policies, 12 warnings', color: 'red' },
+              { grade: 'F', score: 28, title: 'SaaS Dashboard', stack: 'Firebase + Cursor', issues: 'API keys exposed, CSRF missing, .gitignore missing .env', color: 'red' },
+              { grade: 'C', score: 73, title: 'E-commerce', stack: 'Lovable + Stripe', issues: 'Missing CSP headers, .env in repo, No CSRF protection', color: 'yellow' },
             ].map((app, i) => (
               <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
@@ -254,24 +254,38 @@ function RealityCheck() {
           <div className="bg-slate-900 rounded-2xl p-8 text-center">
             <div className="grid md:grid-cols-4 gap-8">
               <div>
-                <div className="text-4xl font-bold text-white mb-1">60%</div>
-                <div className="text-sm text-slate-400">of vibe-coded apps fail basic security scans</div>
+                <div className="text-4xl font-bold text-white mb-1">65%</div>
+                <div className="text-sm text-slate-400">of vibe-coded apps have security issues</div>
               </div>
               <div>
-                <div className="text-4xl font-bold text-white mb-1">5+</div>
-                <div className="text-sm text-slate-400">hardcoded secrets found per app on average</div>
+                <div className="text-4xl font-bold text-white mb-1">58%</div>
+                <div className="text-sm text-slate-400">have at least one CRITICAL vulnerability</div>
               </div>
               <div>
-                <div className="text-4xl font-bold text-white mb-1">3/10</div>
-                <div className="text-sm text-slate-400">apps have .env files committed to repo</div>
+                <div className="text-4xl font-bold text-white mb-1">70%</div>
+                <div className="text-sm text-slate-400">missing CSRF protection entirely</div>
               </div>
               <div>
-                <div className="text-4xl font-bold text-white mb-1">0</div>
-                <div className="text-sm text-slate-400">apps had proper CSP headers configured</div>
+                <div className="text-4xl font-bold text-white mb-1">12%</div>
+                <div className="text-sm text-slate-400">expose Supabase service role keys</div>
+              </div>
+            </div>
+            <div className="mt-6 pt-6 border-t border-slate-700 grid md:grid-cols-3 gap-6 text-left">
+              <div>
+                <div className="text-emerald-400 font-semibold text-sm mb-1">🔗 Supply Chain (OWASP A03:2025)</div>
+                <div className="text-slate-300 text-xs">Slopsquatting: AI hallucinates non-existent packages. Attackers register them to inject malware via npm install.</div>
+              </div>
+              <div>
+                <div className="text-emerald-400 font-semibold text-sm mb-1">⚠️ Error Handling (OWASP A10:2025)</div>
+                <div className="text-slate-300 text-xs">Stack traces, debug endpoints, and fail-open conditions leak internal info. Found in 36% of apps.</div>
+              </div>
+              <div>
+                <div className="text-emerald-400 font-semibold text-sm mb-1">🔑 Exposed Secrets</div>
+                <div className="text-slate-300 text-xs">41% expose hardcoded API keys, 12% expose Supabase credentials, 41% have exposed .env files.</div>
               </div>
             </div>
             <p className="text-xs text-slate-500 mt-6">
-              Based on scans of public vibe-coded projects on GitHub, 2026
+              Based on security research of 100 vibe-coded apps (Lovable, Bolt.new, v0.dev, Cursor), 2026. Study: 318 total vulnerabilities found, 89 CRITICAL.
             </p>
           </div>
         </FadeIn>
@@ -477,12 +491,14 @@ function HowItWorks() {
 
 function Features() {
   const features = [
-    { icon: Shield, title: 'OWASP Top 10 Coverage', description: 'Complete coverage of the most critical web application security risks.' },
+    { icon: Shield, title: 'OWASP Top 10 2025', description: 'Coverage including NEW A03 Supply Chain and A10 Error Handling categories from OWASP Top 10 2025.' },
     { icon: Zap, title: 'Lightning Fast', description: 'Get detailed security findings in seconds, not hours.' },
     { icon: Lock, title: 'No Signup Required', description: 'Start scanning immediately. No account, no email, no credit card.' },
     { icon: FileCode, title: 'Actionable Fixes', description: 'Clear remediation steps you can copy and paste directly.' },
     { icon: BarChart3, title: 'Severity Ratings', description: 'Issues categorized by criticality to prioritize your fixes.' },
     { icon: Globe, title: 'GitHub & Websites', description: 'Scan public GitHub repos or any website URL.' },
+    { icon: AlertTriangle, title: 'Slopsquatting Detection', description: 'Detect AI-hallucinated packages that attackers can register as malicious dependencies.' },
+    { icon: Bug, title: 'Supabase Credential Scan', description: 'Find hardcoded Supabase anon/service keys before attackers exploit them.' },
   ]
   return (
     <section id="features" className="py-20 bg-slate-50">
