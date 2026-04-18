@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Shield, Zap, Globe, Github, Terminal, ChevronRight, Lock, ArrowRight, FileCode, Sparkles, AlertTriangle, CheckCircle, Clock, Bug, BarChart3, Users, Star, Download, FileText } from 'lucide-react'
+import { Shield, Zap, Globe, Github, Terminal, Lock, ArrowRight, FileCode, Sparkles, AlertTriangle, CheckCircle, Clock, Bug, BarChart3, Star } from 'lucide-react'
 import { downloadPDF } from '@/lib/pdf'
 
 type ScanType = 'github' | 'website'
@@ -80,7 +80,7 @@ function AnimatedCounter({ end, duration = 2000 }: { end: number; duration?: num
   return <span ref={ref}>{count.toLocaleString()}</span>
 }
 
-function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -101,14 +101,73 @@ function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   return (
     <div
       ref={ref}
-      className="transition-all duration-700 ease-out"
+      className={`transition-all duration-700 ease-out ${className}`}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(20px)',
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+        filter: visible ? 'blur(0)' : 'blur(4px)',
       }}
     >
       {children}
     </div>
+  )
+}
+
+function FloatingParticles() {
+  const particles = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    size: Math.random() * 4 + 2,
+    delay: Math.random() * 8,
+    duration: Math.random() * 6 + 8,
+    color: Math.random() > 0.5 ? '#34d399' : '#22c55e',
+  }))
+
+  return (
+    <div className="particles-container">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="particle"
+          style={{
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            color: p.color,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+function HeroGlints() {
+  const glints = Array.from({ length: 8 }, (_, i) => ({
+    id: i,
+    left: `${15 + Math.random() * 70}%`,
+    top: `${20 + Math.random() * 60}%`,
+    delay: Math.random() * 6,
+    size: Math.random() * 3 + 2,
+  }))
+
+  return (
+    <>
+      {glints.map((g) => (
+        <div
+          key={g.id}
+          className="glint"
+          style={{
+            left: g.left,
+            top: g.top,
+            animationDelay: `${g.delay}s`,
+            width: g.size,
+            height: g.size,
+          }}
+        />
+      ))}
+    </>
   )
 }
 
@@ -123,10 +182,10 @@ function Header() {
           <span className="font-semibold text-lg tracking-tight">VibeChecker</span>
         </div>
         <nav className="flex items-center gap-8 text-sm">
-          <a href="#features" className="text-slate-600 hover:text-slate-900 transition">Features</a>
-          <a href="#how" className="text-slate-600 hover:text-slate-900 transition">How it Works</a>
-          <a href="#stats" className="text-slate-600 hover:text-slate-900 transition">Stats</a>
-          <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-900 transition">
+          <a href="#features" className="text-slate-600 hover:text-slate-900 transition-colors">Features</a>
+          <a href="#how" className="text-slate-600 hover:text-slate-900 transition-colors">How it Works</a>
+          <a href="#stats" className="text-slate-600 hover:text-slate-900 transition-colors">Stats</a>
+          <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-900 transition-colors">
             <Github className="w-5 h-5" />
           </a>
         </nav>
@@ -141,10 +200,12 @@ function Hero() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-1/4 w-72 h-72 bg-emerald-200 rounded-full blur-3xl opacity-20" />
         <div className="absolute top-40 right-1/4 w-96 h-96 bg-blue-200 rounded-full blur-3xl opacity-20" />
+        <FloatingParticles />
+        <HeroGlints />
       </div>
       <div className="relative max-w-3xl mx-auto px-6">
         <FadeIn>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 mb-8 shimmer">
             <Sparkles className="w-4 h-4" />
             <span>65+ Security Checks • OWASP Top 10 2025 Coverage • Supply Chain & Error Handling</span>
           </div>
@@ -164,11 +225,11 @@ function Hero() {
         </FadeIn>
         <FadeIn delay={300}>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#scanner" className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-all hover:gap-3">
+            <a href="#scanner" className="group btn-glow inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-all hover:gap-3 border-glow">
               Start Scanning Free
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </a>
-            <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition">
+            <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 hover:border-emerald-300 transition-all hover:shadow-md">
               <Github className="w-4 h-4" />
               View on GitHub
             </a>
@@ -191,7 +252,7 @@ function Stats() {
             { value: 100, label: 'Free Forever', suffix: '%' },
           ].map((stat, i) => (
             <FadeIn key={i} delay={i * 100}>
-              <div className="text-center">
+              <div className="text-center stat-card p-4 rounded-xl">
                 <div className="text-3xl md:text-4xl font-bold text-white mb-1">
                   <AnimatedCounter end={stat.value} />
                   <span className="text-emerald-400">{stat.suffix}</span>
@@ -231,7 +292,7 @@ function RealityCheck() {
               { grade: 'F', score: 28, title: 'SaaS Dashboard', stack: 'Firebase + Cursor', issues: 'API keys exposed, CSRF missing, .gitignore missing .env', color: 'red' },
               { grade: 'C', score: 73, title: 'E-commerce', stack: 'Lovable + Stripe', issues: 'Missing CSP headers, .env in repo, No CSRF protection', color: 'yellow' },
             ].map((app, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-shadow">
+              <div key={i} className={`bg-white rounded-2xl border border-slate-200 p-6 card-hover ${app.color === 'red' ? 'hover:border-red-300' : 'hover:border-yellow-300'}`}>
                 <div className="flex items-start justify-between mb-4">
                   <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg ${app.color === 'red' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'}`}>
                     {app.grade}
@@ -360,8 +421,18 @@ function Scanner() {
                 <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder={scanType === 'github' ? 'https://github.com/owner/repo' : 'https://example.com'} className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition" onKeyDown={(e) => e.key === 'Enter' && handleScan()} />
               </div>
-              <button onClick={handleScan} disabled={isScanning || !url.trim()} className="px-8 py-4 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
-                {isScanning ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Scanning</> : <><ArrowRight className="w-4 h-4" />Scan</>}
+              <button onClick={handleScan} disabled={isScanning || !url.trim()} className={`btn-scan px-8 py-4 rounded-xl text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${isScanning ? 'scan-pulse' : ''}`}>
+                {isScanning ? (
+                  <>
+                    <div className="spinner-emerald w-4 h-4" />
+                    <span className="scanning-dots">Scanning</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="w-4 h-4" />
+                    Scan
+                  </>
+                )}
               </button>
             </div>
             {error && (
@@ -373,16 +444,28 @@ function Scanner() {
             {isScanning && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-sm text-slate-500">
-                  <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />Scanning in progress...</span>
+                  <span className="flex items-center gap-2">
+                    <div className="spinner-emerald w-4 h-4 border-emerald-500/30 border-t-emerald-500" />
+                    Scanning in progress...
+                  </span>
                   <span>{Math.round(scanProgress)}%</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-500 ease-out" style={{ width: `${scanProgress}%` }} />
+                  <div className="h-full progress-gradient rounded-full transition-all duration-500 ease-out" style={{ width: `${scanProgress}%` }} />
                 </div>
                 <div className="space-y-2 text-sm text-slate-500">
-                  <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Fetching {scanType === 'github' ? 'repository' : 'website'}...</p>
-                  <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Analyzing security headers...</p>
-                  <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Running OWASP Top 10 checks...</p>
+                  <p className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot" />
+                    Fetching {scanType === 'github' ? 'repository' : 'website'}...
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot" style={{ animationDelay: '0.2s' }} />
+                    Analyzing security headers...
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot" style={{ animationDelay: '0.4s' }} />
+                    Running OWASP Top 10 checks...
+                  </p>
                 </div>
               </div>
             )}
@@ -403,14 +486,14 @@ function Scanner() {
                     {Object.entries(result.severityCounts).map(([sev, count]) => (
                       count > 0 && <span key={sev} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${SEVERITY_STYLES[sev as Severity].bg} ${SEVERITY_STYLES[sev as Severity].text}`}><span className={`w-1.5 h-1.5 rounded-full ${SEVERITY_STYLES[sev as Severity].dot}`} />{count} {sev}</span>
                     ))}
-                    <button onClick={() => downloadPDF(result)} className="ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium hover:bg-slate-800 transition">
+                    <button onClick={() => downloadPDF(result)} className="ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-[0.98]">
                       <FileText className="w-3.5 h-3.5" />Download PDF Report
                     </button>
                   </div>
                 </div>
                 {totalFindings === 0 ? (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4 floating">
                       <CheckCircle className="w-8 h-8 text-emerald-600" />
                     </div>
                     <h3 className="text-xl font-semibold text-slate-900 mb-2">All Good!</h3>
@@ -426,7 +509,7 @@ function Scanner() {
                       const order = { critical: 0, high: 1, medium: 2, low: 3, info: 4 }
                       return order[a.severity] - order[b.severity]
                     }).map((finding) => (
-                      <div key={finding.id} className={`p-5 rounded-xl border ${SEVERITY_STYLES[finding.severity].border} ${SEVERITY_STYLES[finding.severity].bg} transition hover:shadow-sm`}>
+                      <div key={finding.id} className={`p-5 rounded-xl border card-hover ${SEVERITY_STYLES[finding.severity].border} ${SEVERITY_STYLES[finding.severity].bg}`}>
                         <div className="flex items-start gap-3">
                           <SeverityBadge severity={finding.severity} />
                           <div className="flex-1 min-w-0">
@@ -512,7 +595,7 @@ function Features() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, i) => (
             <FadeIn key={i} delay={i * 100}>
-              <div className="group p-6 rounded-2xl bg-white border border-slate-200 hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300">
+              <div className="feature-card group p-6 rounded-2xl bg-white border border-slate-200">
                 <div className="w-12 h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center mb-4 transition-colors">
                   <feature.icon className="w-6 h-6 text-emerald-600" />
                 </div>
@@ -545,7 +628,7 @@ function Testimonials() {
         <div className="grid md:grid-cols-3 gap-6">
           {testimonials.map((t, i) => (
             <FadeIn key={i} delay={i * 100}>
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="card-hover p-6 rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}
                 </div>
@@ -566,12 +649,15 @@ function Testimonials() {
 function CTA() {
   return (
     <section className="py-20 bg-gradient-to-br from-slate-900 to-slate-800">
-      <div className="max-w-3xl mx-auto px-6 text-center">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <FloatingParticles />
+      </div>
+      <div className="relative max-w-3xl mx-auto px-6 text-center">
         <FadeIn>
           <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4">Ready to Secure Your App?</h2>
           <p className="text-lg text-slate-300 mb-8">Join thousands of developers who ship safer code with VibeChecker.</p>
-          <a href="#scanner" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-400 transition-all hover:gap-3">
-            Start Scanning Free <ArrowRight className="w-5 h-5" />
+          <a href="#scanner" className="btn-glow group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-400 transition-all hover:gap-3 border-glow">
+            Start Scanning Free <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
           </a>
         </FadeIn>
       </div>
