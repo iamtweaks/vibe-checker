@@ -184,7 +184,7 @@ function Header() {
 
 function Hero() {
   return (
-    <section className="pt-32 pb-20 text-center bg-gradient-to-b from-white via-slate-50 to-white overflow-hidden">
+    <section className="pt-28 pb-16 text-center bg-gradient-to-b from-white via-slate-50 to-white overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-1/4 w-72 h-72 bg-emerald-200 rounded-full blur-3xl opacity-20" />
         <div className="absolute top-40 right-1/4 w-96 h-96 bg-blue-200 rounded-full blur-3xl opacity-20" />
@@ -195,26 +195,26 @@ function Hero() {
         <FadeIn>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 mb-8 shimmer">
             <Sparkles className="w-4 h-4" />
-            <span>65+ Security Checks • OWASP Top 10 2025 Coverage • Supply Chain & Error Handling</span>
+            <span>Free • No Signup • Results in Seconds</span>
           </div>
         </FadeIn>
         <FadeIn delay={100}>
-          <h1 className="text-5xl md:text-6xl font-semibold tracking-tight text-slate-900 mb-6">
-            Free Vibe Coding<br />
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-slate-900 mb-6">
+            The Security Scanner<br />
             <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-              Security Scanner
+              Built for Vibe-Coded Apps
             </span>
           </h1>
         </FadeIn>
         <FadeIn delay={200}>
-          <p className="text-lg text-slate-600 mb-10 max-w-xl mx-auto leading-relaxed">
-            Find critical vulnerabilities in your vibe-coded apps before they become breaches. No signup, no credit card, no BS.
+          <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+            If you built your app with <strong>Lovable, Bolt, Cursor, Replit,</strong> or <strong>Google AI Studio</strong>, VibeCheck finds the security vulnerabilities that AI code generators commonly introduce.
           </p>
         </FadeIn>
         <FadeIn delay={300}>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a href="#scanner" className="group btn-glow inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-all hover:gap-3 border-glow">
-              Start Scanning Free
+              Scan Your App Free
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </a>
             <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 hover:border-emerald-300 transition-all hover:shadow-md">
@@ -276,85 +276,60 @@ function Stats() {
 
 function RealityCheck() {
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-slate-50">
+    <section className="py-16 md:py-20 bg-gradient-to-b from-white to-slate-50">
       <div className="max-w-5xl mx-auto px-6">
         <FadeIn>
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-sm text-red-700 mb-4">
               <AlertTriangle className="w-4 h-4" />
-              <span>Security Reality Check</span>
+              <span>The Data Is Alarming</span>
             </div>
             <h2 className="text-3xl font-semibold tracking-tight text-slate-900 mb-3">
-              What We Found in the Wild
+              What the Research Says
             </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
-              We scanned popular vibe-coded apps. The results are concerning.
+            <p className="text-slate-600 max-w-2xl mx-auto text-sm md:text-base">
+              Escape.tech scanned 5,600 vibe-coded apps and found over 2,000 vulnerabilities and 400 exposed secrets. Tenzai tested 15 apps built with 5 AI coding tools and found 69 vulnerabilities including critical SSRF and injection flaws.
             </p>
           </div>
         </FadeIn>
+
         <FadeIn delay={100}>
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
             {[
-              { grade: 'F', score: 3, title: 'Booking App', stack: 'Supabase + Lovable', issues: 'Service role key in .env committed, No RLS policies, 12 warnings', color: 'red' },
-              { grade: 'F', score: 28, title: 'SaaS Dashboard', stack: 'Firebase + Cursor', issues: 'API keys exposed, CSRF missing, .gitignore missing .env', color: 'red' },
-              { grade: 'C', score: 73, title: 'E-commerce', stack: 'Lovable + Stripe', issues: 'Missing CSP headers, .env in repo, No CSRF protection', color: 'yellow' },
-            ].map((app, i) => (
-              <div key={i} className={`bg-white rounded-2xl border border-slate-200 p-6 card-hover ${app.color === 'red' ? 'hover:border-red-300' : 'hover:border-yellow-300'}`}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg ${app.color === 'red' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'}`}>
-                    {app.grade}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-slate-900">{app.score}</div>
-                    <div className="text-xs text-slate-500">out of 100</div>
-                  </div>
-                </div>
-                <h3 className="font-semibold text-slate-900 mb-1">{app.title}</h3>
-                <p className="text-xs text-slate-500 mb-3">{app.stack}</p>
-                <div className={`text-sm p-3 rounded-lg ${app.color === 'red' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                  ⚠️ {app.issues}
-                </div>
+              { stat: '45%', label: 'of AI-generated code contains vulnerabilities', source: 'Kaspersky' },
+              { stat: '2.74x', label: 'more XSS vulnerabilities in AI co-written code', source: 'CodeRabbit' },
+              { stat: '10.3%', label: 'of Lovable apps have critical RLS flaws', source: 'Security Audit' },
+              { stat: '69', label: 'vulnerabilities found in 15 AI-built apps', source: 'Tenzai Research' },
+            ].map((item, i) => (
+              <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 text-center card-hover">
+                <div className="text-3xl font-bold text-red-600 mb-1">{item.stat}</div>
+                <div className="text-sm text-slate-600 mb-2">{item.label}</div>
+                <div className="text-xs text-slate-400">{item.source}</div>
               </div>
             ))}
           </div>
         </FadeIn>
+
         <FadeIn delay={200}>
-          <div className="bg-slate-900 rounded-2xl p-8 text-center">
-            <div className="grid md:grid-cols-4 gap-8">
+          <div className="bg-slate-900 rounded-2xl p-6 md:p-8">
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-semibold text-white mb-2">Why Vibe-Coded Apps Are at Risk</h3>
+              <p className="text-sm text-slate-400">AI models optimize for working code, not secure code.</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6 text-left">
               <div>
-                <div className="text-4xl font-bold text-white mb-1">65%</div>
-                <div className="text-sm text-slate-400">of vibe-coded apps have security issues</div>
+                <div className="text-emerald-400 font-semibold text-sm mb-2">🚀 Speed Creates Blind Spots</div>
+                <p className="text-slate-300 text-xs">AI coding tools build full-stack apps in minutes. They skip authentication checks, expose database credentials, misconfigure Supabase RLS policies, and leave API routes wide open.</p>
               </div>
               <div>
-                <div className="text-4xl font-bold text-white mb-1">58%</div>
-                <div className="text-sm text-slate-400">have at least one CRITICAL vulnerability</div>
+                <div className="text-emerald-400 font-semibold text-sm mb-2">🔓 The Attack Surface Is Growing</div>
+                <p className="text-slate-300 text-xs">With Google AI Studio offering full-stack vibe coding with Firebase integration, and Lovable creating 200,000 new projects daily, attackers know where to look.</p>
               </div>
               <div>
-                <div className="text-4xl font-bold text-white mb-1">70%</div>
-                <div className="text-sm text-slate-400">missing CSRF protection entirely</div>
-              </div>
-              <div>
-                <div className="text-4xl font-bold text-white mb-1">12%</div>
-                <div className="text-sm text-slate-400">expose Supabase service role keys</div>
+                <div className="text-emerald-400 font-semibold text-sm mb-2">✅ VibeCheck Catches These Issues</div>
+                <p className="text-slate-300 text-xs">Free, no signup required, gives you a security grade in seconds. Catches issues before your users do.</p>
               </div>
             </div>
-            <div className="mt-6 pt-6 border-t border-slate-700 grid md:grid-cols-3 gap-6 text-left">
-              <div>
-                <div className="text-emerald-400 font-semibold text-sm mb-1">🔗 Supply Chain (OWASP A03:2025)</div>
-                <div className="text-slate-300 text-xs">Slopsquatting: AI hallucinates non-existent packages. Attackers register them to inject malware via npm install.</div>
-              </div>
-              <div>
-                <div className="text-emerald-400 font-semibold text-sm mb-1">⚠️ Error Handling (OWASP A10:2025)</div>
-                <div className="text-slate-300 text-xs">Stack traces, debug endpoints, and fail-open conditions leak internal info. Found in 36% of apps.</div>
-              </div>
-              <div>
-                <div className="text-emerald-400 font-semibold text-sm mb-1">🔑 Exposed Secrets</div>
-                <div className="text-slate-300 text-xs">41% expose hardcoded API keys, 12% expose Supabase credentials, 41% have exposed .env files.</div>
-              </div>
-            </div>
-            <p className="text-xs text-slate-500 mt-6">
-              Based on security research of 100 vibe-coded apps (Lovable, Bolt.new, v0.dev, Cursor), 2026. Study: 318 total vulnerabilities found, 89 CRITICAL.
-            </p>
           </div>
         </FadeIn>
       </div>
@@ -655,34 +630,79 @@ Do not explain what you would do — provide actual working code.`
 }
 
 function HowItWorks() {
-  const steps = [
-    { icon: Terminal, title: 'Enter URL', description: 'Paste a GitHub repository or website URL.' },
-    { icon: Zap, title: 'Instant Scan', description: 'Our scanner analyzes every aspect for vulnerabilities.' },
-    { icon: Bug, title: 'Get Results', description: 'Receive detailed findings with fix recommendations.' },
-  ]
   return (
-    <section id="how" className="py-20 bg-white">
+    <section id="how" className="py-16 md:py-20 bg-white">
       <div className="max-w-5xl mx-auto px-6">
         <FadeIn>
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 mb-3">How It Works</h2>
-            <p className="text-slate-600 max-w-xl mx-auto">Three simple steps to secure your vibe-coded app</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 mb-3">Two Ways to Scan</h2>
+            <p className="text-slate-600 max-w-xl mx-auto">Most security scanners only do one or the other. VibeCheck does both.</p>
           </div>
         </FadeIn>
-        <div className="grid md:grid-cols-3 gap-8">
-          {steps.map((step, i) => (
-            <FadeIn key={i} delay={i * 150}>
-              <div className="relative">
-                {i < steps.length - 1 && <div className="hidden md:block absolute top-12 left-full w-full h-px bg-gradient-to-r from-slate-200 to-transparent -translate-x-1/2" />}
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mb-5 shadow-lg shadow-emerald-200">
-                  <step.icon className="w-6 h-6 text-white" />
+        <div className="grid md:grid-cols-2 gap-8">
+          <FadeIn delay={100}>
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 md:p-8 text-white">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <Github className="w-6 h-6 text-emerald-400" />
                 </div>
-                <div className="text-sm font-medium text-emerald-600 mb-1">Step {i + 1}</div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">{step.title}</h3>
-                <p className="text-sm text-slate-600">{step.description}</p>
+                <h3 className="text-xl font-semibold">Source Code Scanner</h3>
               </div>
-            </FadeIn>
-          ))}
+              <p className="text-slate-300 text-sm mb-6">Analyzes your GitHub repository for hardcoded secrets, exposed credentials, misconfigurations, and vulnerable patterns in your code.</p>
+              <div className="space-y-2">
+                {[
+                  'Exposed API keys and secrets (OpenAI, Stripe, Supabase)',
+                  'Firebase misconfigurations without proper security rules',
+                  'Supabase without Row Level Security (RLS)',
+                  'Database credentials hardcoded in source files',
+                  'JWT secrets exposed in codebase',
+                  'Environment files (.env) committed to repository',
+                  'Unprotected API routes handling sensitive operations',
+                  'Open CORS policies allowing any website to call your API',
+                  'SQL injection vulnerabilities from string concatenation',
+                  'Missing input validation on API endpoints',
+                  'Missing security headers (XSS, clickjacking)',
+                  'Vulnerable dependencies in package.json',
+                  'Missing rate limiting on public API routes',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+          <FadeIn delay={200}>
+            <div className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-2xl p-6 md:p-8 text-white">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Globe className="w-6 h-6 text-emerald-200" />
+                </div>
+                <h3 className="text-xl font-semibold">Live Site Scanner</h3>
+              </div>
+              <p className="text-emerald-100/80 text-sm mb-6">Checks your deployed application for security headers, exposed files, CORS misconfigurations, and technology fingerprints.</p>
+              <div className="space-y-2">
+                {[
+                  'Content-Security-Policy (CSP) header',
+                  'HSTS (HTTP Strict Transport Security)',
+                  'X-Frame-Options (clickjacking protection)',
+                  'X-Content-Type-Options (MIME sniffing)',
+                  'Referrer-Policy and Permissions-Policy',
+                  'SSL/TLS configuration and HTTP to HTTPS redirect',
+                  'Exposed sensitive files (.env, .git/config, phpinfo)',
+                  'CORS misconfigurations for cross-origin attacks',
+                  'Cookie security flags (HttpOnly, Secure, SameSite)',
+                  'Technology fingerprinting in headers',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-emerald-100">
+                    <CheckCircle className="w-4 h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </div>
     </section>
@@ -691,17 +711,17 @@ function HowItWorks() {
 
 function Features() {
   const features = [
-    { icon: Shield, title: 'OWASP Top 10 2025', description: 'Coverage including NEW A03 Supply Chain and A10 Error Handling categories from OWASP Top 10 2025.' },
+    { icon: Shield, title: 'OWASP Top 10 2025', description: 'Coverage including NEW A03 Supply Chain and A10 Error Handling categories.' },
     { icon: Zap, title: 'Lightning Fast', description: 'Get detailed security findings in seconds, not hours.' },
     { icon: Lock, title: 'No Signup Required', description: 'Start scanning immediately. No account, no email, no credit card.' },
-    { icon: FileCode, title: 'Actionable Fixes', description: 'Clear remediation steps you can copy and paste directly.' },
+    { icon: FileCode, title: 'AI Fix Prompts', description: 'Copy a detailed fix prompt for each vulnerability and paste it into your AI agent.' },
     { icon: BarChart3, title: 'Severity Ratings', description: 'Issues categorized by criticality to prioritize your fixes.' },
     { icon: Globe, title: 'GitHub & Websites', description: 'Scan public GitHub repos or any website URL.' },
-    { icon: AlertTriangle, title: 'Slopsquatting Detection', description: 'Detect AI-hallucinated packages that attackers can register as malicious dependencies.' },
-    { icon: Bug, title: 'Supabase Credential Scan', description: 'Find hardcoded Supabase anon/service keys before attackers exploit them.' },
+    { icon: AlertTriangle, title: 'Slopsquatting Detection', description: 'Detect AI-hallucinated packages that attackers can register as malicious.' },
+    { icon: Bug, title: 'Supabase RLS Scan', description: 'Find Row Level Security misconfigurations — the #1 issue in vibe-coded apps.' },
   ]
   return (
-    <section id="features" className="py-20 bg-slate-50">
+    <section id="features" className="py-16 md:py-20 bg-slate-50">
       <div className="max-w-5xl mx-auto px-6">
         <FadeIn>
           <div className="text-center mb-14">
@@ -709,15 +729,15 @@ function Features() {
             <p className="text-slate-600 max-w-xl mx-auto">Professional-grade security scanning, completely free</p>
           </div>
         </FadeIn>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {features.map((feature, i) => (
             <FadeIn key={i} delay={i * 100}>
-              <div className="feature-card group p-6 rounded-2xl bg-white border border-slate-200">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center mb-4 transition-colors">
-                  <feature.icon className="w-6 h-6 text-emerald-600" />
+              <div className="feature-card group p-5 md:p-6 rounded-2xl bg-white border border-slate-200">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center mb-4 transition-colors">
+                  <feature.icon className="w-5 h-5 md:w-6 md:h-6 text-emerald-600" />
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-slate-600">{feature.description}</p>
+                <h3 className="font-semibold text-slate-900 mb-2 text-sm md:text-base">{feature.title}</h3>
+                <p className="text-xs md:text-sm text-slate-600">{feature.description}</p>
               </div>
             </FadeIn>
           ))}
@@ -765,16 +785,17 @@ function Testimonials() {
 
 function CTA() {
   return (
-    <section className="py-20 bg-gradient-to-br from-slate-900 to-slate-800">
+    <section className="py-16 md:py-20 bg-gradient-to-br from-slate-900 to-slate-800">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <FloatingParticles />
       </div>
       <div className="relative max-w-3xl mx-auto px-6 text-center">
         <FadeIn>
-          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4">Ready to Secure Your App?</h2>
-          <p className="text-lg text-slate-300 mb-8">Join thousands of developers who ship safer code with VibeChecker.</p>
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4">Need Help Fixing the Issues?</h2>
+          <p className="text-lg text-slate-300 mb-4">Every finding includes an "AI Fix Prompt" — copy it and paste into your favorite AI agent for step-by-step fix instructions.</p>
+          <p className="text-md text-emerald-400 mb-8">Free • No Signup • Works with Lovable, Bolt, Cursor, Replit & more</p>
           <a href="#scanner" className="btn-glow group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-400 transition-all hover:gap-3 border-glow">
-            Start Scanning Free <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            Scan Your App Now <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
           </a>
         </FadeIn>
       </div>
@@ -784,7 +805,7 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-slate-200 bg-white py-12">
+    <footer className="border-t border-slate-200 bg-white py-10">
       <div className="max-w-5xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
@@ -793,10 +814,11 @@ function Footer() {
             </div>
             <span className="font-semibold">VibeChecker</span>
           </div>
-          <div className="text-sm text-slate-500">Free security scanner for vibe-coded apps. Built with ❤️ for solo founders.</div>
+          <div className="text-sm text-slate-500 text-center">Free security scanner for vibe-coded apps. Built for developers who ship fast and safe.</div>
           <div className="flex items-center gap-6 text-sm text-slate-500">
             <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition">GitHub</a>
-            <a href="#features" className="hover:text-slate-900 transition">Features</a>
+            <a href="#how" className="hover:text-slate-900 transition">How It Works</a>
+            <a href="#scanner" className="hover:text-slate-900 transition">Scan Now</a>
           </div>
         </div>
       </div>
