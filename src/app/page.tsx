@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Shield, Zap, Globe, Github, Terminal, Lock, ArrowRight, FileCode, Sparkles, AlertTriangle, CheckCircle, Clock, Bug, BarChart3, Star, FileText } from 'lucide-react'
+import { Shield, Zap, Globe, Github, Terminal, Lock, ArrowRight, FileCode, Sparkles, AlertTriangle, CheckCircle, Clock, Bug, BarChart3, Star, FileText, Copy, Check } from 'lucide-react'
 import { downloadPDF } from '@/lib/pdf'
 import type { Severity, Finding } from '@/lib/types'
 
@@ -370,6 +370,52 @@ function Scanner() {
   const [error, setError] = useState<string | null>(null)
   const [scanProgress, setScanProgress] = useState(0)
   const [showResult, setShowResult] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const generateFixPrompt = (finding: Finding) => {
+    const language = scanType === 'github' ? 'TypeScript/JavaScript' : 'HTML/Server Config'
+    const context = finding.filePath
+      ? `File: ${finding.filePath}${finding.lineNumber ? ` (line ${finding.lineNumber})` : ''}`
+      : scanType === 'github' ? 'Repository: ' + url : 'Website: ' + url
+
+    return `You are a security expert. Fix this vulnerability in my ${language} project.
+
+Context: ${context}
+
+Severity: ${finding.severity.toUpperCase()}
+Rule ID: ${finding.ruleId}
+
+Vulnerability: ${finding.title}
+Description: ${finding.description}
+${finding.snippet ? `Code snippet:\n${finding.snippet.slice(0, 300)}` : ''}
+
+Remediation: ${finding.remediation}
+
+Please provide:
+1. Root cause explanation
+2. The exact code change needed (show before/after)
+3. Any additional security notes
+
+Do not explain what you would do — provide actual working code.`
+  }
+
+  const handleCopyPrompt = (finding: Finding) => {
+    const prompt = generateFixPrompt(finding)
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopiedId(finding.id)
+      setTimeout(() => setCopiedId(null), 2500)
+    }).catch(() => {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea')
+      textarea.value = prompt
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      setCopiedId(finding.id)
+      setTimeout(() => setCopiedId(null), 2500)
+    })
+  }
 
   const handleScan = async () => {
     if (!url.trim()) return
@@ -378,9 +424,16 @@ function Scanner() {
     setResult(null)
     setShowResult(false)
     setScanProgress(0)
+    const scanStartTime = Date.now()
+    const SCAN_DURATION_MS = 5000
+
+    // Animate progress bar over exactly 5 seconds
     const progressInterval = setInterval(() => {
-      setScanProgress(p => Math.min(p + Math.random() * 12, 90))
-    }, 400)
+      const elapsed = Date.now() - scanStartTime
+      const progress = Math.min((elapsed / SCAN_DURATION_MS) * 100, 95)
+      setScanProgress(progress)
+    }, 100)
+
     try {
       const endpoint = scanType === 'github' ? '/api/scan/github' : '/api/scan/website'
       const res = await fetch(endpoint, {
@@ -388,16 +441,36 @@ function Scanner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() }),
       })
+
+      // Wait until exactly 5 seconds have passed
+      const elapsed = Date.now() - scanStartTime
+      const remaining = SCAN_DURATION_MS - elapsed
+      if (remaining > 0) {
+        await new Promise(r => setTimeout(r, remaining))
+      }
+
       clearInterval(progressInterval)
       setScanProgress(100)
+
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Scan failed')
+        const errorMsg = data.error || 'Scan failed'
+        // Provide friendly messages for specific errors
+        if (res.status === 403 && scanType === 'github') {
+          throw new Error('🔒 This repository is private. Only public GitHub repos can be scanned.')
+        }
+        if (res.status === 404) {
+          throw new Error('🔍 Repository not found. Please check the URL and make sure the repo is public.')
+        }
+        if (res.status === 429) {
+          throw new Error('⏳ Too many requests. Please wait a moment and try again.')
+        }
+        throw new Error(errorMsg)
       }
+
       const data = await res.json()
       setResult(data)
-      // Smooth transition: small delay before showing results
-      setTimeout(() => setShowResult(true), 400)
+      setTimeout(() => setShowResult(true), 300)
       // Increment unique site counter
       fetch('/api/stats', {
         method: 'POST',
@@ -406,7 +479,14 @@ function Scanner() {
       }).catch(() => {})
     } catch (err) {
       clearInterval(progressInterval)
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setScanProgress(0)
+      const msg = err instanceof Error ? err.message : 'An error occurred'
+      // Ensure private repo friendly message
+      if (msg.toLowerCase().includes('private') || msg.toLowerCase().includes('403')) {
+        setError('🔒 This repository is private. VibeChecker can only scan public repositories.')
+      } else {
+        setError(msg)
+      }
     } finally {
       setIsScanning(false)
     }
@@ -535,10 +615,30 @@ function Scanner() {
                               <h4 className="font-medium text-slate-900 truncate">{finding.title}</h4>
                             </div>
                             <p className="text-sm text-slate-600 mb-3">{finding.description}</p>
-                            <div className="p-3 rounded-lg bg-white border border-slate-200">
+                            <div className="p-3 rounded-lg bg-white border border-slate-200 mb-3">
                               <p className="text-xs text-slate-400 mb-1 font-medium">How to Fix</p>
                               <p className="text-sm text-slate-700">{finding.remediation}</p>
                             </div>
+                            <button
+                              onClick={() => handleCopyPrompt(finding)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                copiedId === finding.id
+                                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                  : 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]'
+                              }`}
+                            >
+                              {copiedId === finding.id ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5" />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3.5 h-3.5" />
+                                  Copy Fix Prompt for AI
+                                </>
+                              )}
+                            </button>
                           </div>
                         </div>
                       </div>
