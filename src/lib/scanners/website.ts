@@ -1,29 +1,83 @@
 import * as cheerio from 'cheerio'
+import type { WebsiteScanResult, Finding, SeverityCounts, Severity } from '../types'
 
-export interface WebsiteScanResult {
-  findings: Array<{
-    id: string
-    ruleId: string
-    severity: 'critical' | 'high' | 'medium' | 'low' | 'info'
-    title: string
-    description: string
-    remediation: string
-  }>
-  severityCounts: Record<string, number>
-  scannedUrls: number
-  scanDuration: number
-}
+// ============== Type Definitions ==============
 
 interface SecurityCheck {
   id: string
   title: string
   description: string
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info'
+  severity: Severity
   check: ($: cheerio.CheerioAPI, url: string, headers: Record<string, string>) => boolean
   remediation: string
   cwe?: string
   owasp?: string
 }
+
+// ============== Utility Functions ==============
+
+/**
+ * Safely parse and validate URL
+ */
+function safeParseUrl(url: string): URL | null {
+  try {
+    return new URL(url)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Safely run a check function and return false on error
+ */
+function safeCheck(checkFn: () => boolean): boolean {
+  try {
+    return checkFn()
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Count occurrences of items matching a predicate
+ */
+function countOccurrences<T>(items: T[], predicate: (item: T) => boolean): number {
+  return items.filter(predicate).length
+}
+
+/**
+ * Convert headers record to lowercase keys for case-insensitive lookup
+ */
+function normalizeHeaders(headers: Headers): Record<string, string> {
+  const normalized: Record<string, string> = {}
+  headers.forEach((value, key) => {
+    normalized[key.toLowerCase()] = value.toLowerCase()
+  })
+  return normalized
+}
+
+/**
+ * Initialize severity counts
+ */
+function initSeverityCounts(): SeverityCounts {
+  return { critical: 0, high: 0, medium: 0, low: 0, info: 0 }
+}
+
+/**
+ * Build a Finding object
+ */
+function buildFinding(check: SecurityCheck, index: number): Finding {
+  return {
+    id: crypto.randomUUID(),
+    ruleId: check.owasp ? check.owasp.split(':')[0] : check.id.toUpperCase(),
+    severity: check.severity,
+    title: check.title,
+    description: check.description,
+    remediation: check.remediation,
+  }
+}
+
+// ============== Security Checks ==============
 
 // OWASP Top 10 2021 aligned checks
 const SECURITY_CHECKS: SecurityCheck[] = [
@@ -36,7 +90,8 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-639',
     owasp: 'A01:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
-      const urlObj = new URL(url, 'http://x')
+      const urlObj = safeParseUrl(url)
+      if (!urlObj) return false
       const path = urlObj.pathname
       return /\/(user|account|order|invoice|transaction|profile|edit|delete)\/(\d+|[a-f0-9-]+)/i.test(path)
     },
@@ -50,7 +105,8 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-22',
     owasp: 'A01:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
-      const urlObj = new URL(url, 'http://x')
+      const urlObj = safeParseUrl(url)
+      if (!urlObj) return false
       const params = urlObj.searchParams.toString()
       return /(\.\.|\%2e|\%2f)/i.test(params) || /(\?|&)path=|(\?|&)file=|(\?|&)url=/i.test(params)
     },
@@ -89,6 +145,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-311',
     owasp: 'A02:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
+      if (!url) return false
       const html = $.html()
       return /src=["']http:\/\//i.test(html) || /href=["']http:\/\//i.test(html)
     },
@@ -138,7 +195,8 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-79',
     owasp: 'A03:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
-      const urlObj = new URL(url, 'http://x')
+      const urlObj = safeParseUrl(url)
+      if (!urlObj) return false
       const params = urlObj.searchParams.toString()
       if (!params) return false
       const bodyText = $('body').text()
@@ -180,7 +238,8 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-89',
     owasp: 'A03:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
-      const urlObj = new URL(url, 'http://x')
+      const urlObj = safeParseUrl(url)
+      if (!urlObj) return false
       const params = urlObj.searchParams.toString()
       if (!params) return false
       const riskyParams = ['id', 'user', 'query', 'search', 'page', 'sort', 'order', 'filter', 'cat']
@@ -198,6 +257,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-78',
     owasp: 'A03:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
+      if (!url) return false
       const urlParams = url + $('body').text()
       return /[;&|`$]/.test(urlParams) && /(\?|=|&)(cmd|command|exec|shell|ping|nslookup|wget|curl)/i.test(urlParams)
     },
@@ -211,7 +271,8 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-90',
     owasp: 'A03:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
-      const urlObj = new URL(url, 'http://x')
+      const urlObj = safeParseUrl(url)
+      if (!urlObj) return false
       const params = urlObj.searchParams.toString()
       return (urlObj.pathname.includes('ldap') || /ldap/i.test(params)) && /(\*|\(|\||\&)/.test(params)
     },
@@ -227,6 +288,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-489',
     owasp: 'A04:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
+      if (!url) return false
       const bodyText = $('body').text().toLowerCase()
       const debugPatterns = ['debug', 'stack trace', 'error details', 'exception', 'java.io', 'stacktrace', 'error in', 'at ']
       const hasDebugContent = debugPatterns.some(p => bodyText.includes(p))
@@ -331,7 +393,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-200',
     owasp: 'A05:2021',
     check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      const versionHeaders = ['server', 'x-powered-by', 'x-aspnet-version', 'x-Generator']
+      const versionHeaders = ['server', 'x-powered-by', 'x-aspnet-version', 'x-generator']
       return versionHeaders.some(h => headers[h] && /\d+(\.\d+)+/.test(headers[h]))
     },
     remediation: 'Remove or genericize version headers. Hide server technology stack information.',
@@ -489,7 +551,8 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-918',
     owasp: 'A10:2021',
     check: ($: cheerio.CheerioAPI, url: string) => {
-      const urlObj = new URL(url, 'http://x')
+      const urlObj = safeParseUrl(url)
+      if (!urlObj) return false
       const ssrfParams = ['url', 'uri', 'link', 'src', 'source', 'domain', 'host', 'port', 'path', 'dest']
       return ssrfParams.some(p => urlObj.searchParams.has(p))
     },
@@ -522,7 +585,8 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'high',
     cwe: 'CWE-209',
     owasp: 'A10:2025',
-    check: ($: cheerio.CheerioAPI, url: string) => {
+    check: ($: cheerio.CherioAPI, url: string) => {
+      if (!url) return false
       const bodyText = $('body').text().toLowerCase()
       const errorPatterns = [
         /stack[\s-]?trace/i,
@@ -604,7 +668,6 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     owasp: 'A05:2025',
     check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
       const pp = headers['permissions-policy'] || headers['feature-policy'] || ''
-      // Flag if missing OR if it allows camera/mic/geolocation without explicit restriction
       if (!pp) return true
       const riskyPerms = ['camera=(', 'microphone=(', 'geolocation=(', 'gyroscope=(', 'magnetometer=(']
       return riskyPerms.some(p => pp.includes(p + '"') || pp.includes(p + '\'')) || pp.includes('*')
@@ -619,7 +682,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     cwe: 'CWE-836',
     owasp: 'A10:2025',
     check: ($: cheerio.CheerioAPI, url: string) => {
-      // Look for patterns suggesting auth bypass in URL
+      if (!url) return false
       const authUrls = /(\/admin|\/dashboard|\/settings|\/profile|\/user|\/account)/i.test(url)
       const failOpenPatterns = /(\/auth\/bypass|\/skip|\/guest|\/anonymous|\/public)/i.test(url)
       return authUrls && failOpenPatterns
@@ -628,11 +691,19 @@ const SECURITY_CHECKS: SecurityCheck[] = [
   },
 ]
 
+// ============== Main Scanner Function ==============
+
 export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
-  const findings: WebsiteScanResult['findings'] = []
+  const findings: Finding[] = []
   const startTime = Date.now()
   let headers: Record<string, string> = {}
   
+  // Validate URL before attempting fetch
+  const urlObj = safeParseUrl(url)
+  if (!urlObj) {
+    throw new Error(`Invalid URL format: ${url}`)
+  }
+
   try {
     const response = await fetch(url, {
       headers: {
@@ -646,38 +717,40 @@ export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
     
-    // Extract headers
-    response.headers.forEach((value, key) => {
-      headers[key.toLowerCase()] = value
-    })
+    // Extract headers with normalization
+    headers = normalizeHeaders(response.headers)
     
     const html = await response.text()
+    
+    // Check HTML size to prevent memory issues
+    if (html.length > 10_000_000) {
+      throw new Error('Website response too large (>10MB). Aborting scan.')
+    }
+    
     const $ = cheerio.load(html)
     
-    // Run all checks
-    for (const check of SECURITY_CHECKS) {
-      try {
-        if (check.check($, url, headers)) {
-          findings.push({
-            id: crypto.randomUUID(),
-            ruleId: check.owasp ? check.owasp.split(':')[0] : check.id.toUpperCase(),
-            severity: check.severity,
-            title: check.title,
-            description: check.description,
-            remediation: check.remediation,
-          })
-        }
-      } catch {
-        // Skip failing checks silently
+    // Run all checks with error isolation
+    for (let i = 0; i < SECURITY_CHECKS.length; i++) {
+      const check = SECURITY_CHECKS[i]
+      const isTriggered = safeCheck(() => check.check($, url, headers))
+      
+      if (isTriggered) {
+        findings.push(buildFinding(check, findings.length))
       }
     }
   } catch (error: any) {
+    if (error.name === 'TimeoutError') {
+      throw new Error(`Website scan timed out after 30 seconds. Try a faster website.`)
+    }
     throw new Error(`Failed to fetch website: ${error.message}`)
   }
   
-  const severityCounts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 }
+  // Calculate severity counts
+  const severityCounts = initSeverityCounts()
   for (const f of findings) {
-    severityCounts[f.severity] = (severityCounts[f.severity] || 0) + 1
+    if (f.severity in severityCounts) {
+      severityCounts[f.severity]++
+    }
   }
   
   return {

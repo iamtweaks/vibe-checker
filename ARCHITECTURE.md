@@ -1,372 +1,269 @@
-# VibeChecker - Technical Architecture
+# VibeChecker Architecture
 
-## 1. Tech Stack
-
-### Core
-- **Framework:** Next.js 14+ (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS + shadcn/ui
-- **Database:** PostgreSQL (via Supabase or Dokploy Postgres)
-- **ORM:** Drizzle ORM
-- **Auth:** Supabase Auth (Phase 2)
-
-### Security Scanning
-- **GitHub API:** @octokit/rest for repository access
-- **Web Scanning:** Custom fetch + Cheerio for HTML parsing
-- **Pattern Matching:** Custom regex rules for vulnerability detection
-- **PDF Generation:** @react-pdf/renderer for reports
-
-### Infrastructure
-- **Hosting:** Dokploy (self-hosted)
-- **Container:** Docker via Dokploy
-- **Domain:** vibe-checker.com (TBD)
-- **SSL:** Auto-managed by Traefik
+Documentation of the VibeChecker security scanner architecture.
 
 ---
 
-## 2. Project Structure
+## Overview
+
+VibeChecker is a free security scanner for vibe-coded applications (built with tools like Lovable, Bolt.new, v0.dev, Cursor). It provides instant security analysis for GitHub repositories and websites, detecting critical vulnerabilities including OWASP Top 10 2025 categories.
+
+---
+
+## Project Structure
 
 ```
-vibe-checker/
-├── src/
-│   ├── app/
-│   │   ├── (marketing)/         # Landing page, tools pages
-│   │   │   ├── page.tsx         # Homepage
-│   │   │   ├── scan/
-│   │   │   │   ├── page.tsx     # Scanner interface
-│   │   │   │   └── results/
-│   │   │   │       └── [id]/    # Results page
-│   │   │   └── tools/
-│   │   │       └── calculators/ # Future tools
-│   │   ├── (dashboard)/         # Phase 2: User dashboard
-│   │   │   ├── layout.tsx
-│   │   │   ├── scans/
-│   │   │   └── settings/
-│   │   ├── api/
-│   │   │   ├── scan/
-│   │   │   │   ├── github/
-│   │   │   │   │   └── route.ts
-│   │   │   │   └── website/
-│   │   │   │       └── route.ts
-│   │   │   └── auth/
-│   │   │       └── [...supabase]/
-│   │   └── layout.tsx
-│   ├── components/
-│   │   ├── ui/                  # shadcn components
-│   │   ├── scanner/
-│   │   │   ├── ScanForm.tsx
-│   │   │   ├── ScanResults.tsx
-│   │   │   ├── SeverityBadge.tsx
-│   │   │   └── FindingCard.tsx
-│   │   ├── landing/
-│   │   │   ├── Hero.tsx
-│   │   │   ├── Features.tsx
-│   │   │   └── Pricing.tsx
-│   │   └── layout/
-│   │       ├── Header.tsx
-│   │       └── Footer.tsx
-│   ├── lib/
-│   │   ├── scanners/
-│   │   │   ├── github.ts        # GitHub scanning logic
-│   │   │   ├── website.ts       # Website scanning logic
-│   │   │   └── rules/           # Detection rules
-│   │   │       ├── secrets.ts
-│   │   │       ├── headers.ts
-│   │   │       └── patterns.ts
-│   │   ├── db/
-│   │   │   ├── schema.ts
-│   │   │   └── index.ts
-│   │   └── utils/
-│   │       ├── rate-limit.ts
-│   │       └── validators.ts
-│   └── types/
-│       └── index.ts
-├── prisma/ or db/
-│   ├── schema.sql
-│   └── migrations/
-├── public/
-│   └── assets/
-├── tests/
-│   ├── scanners/
-│   └── e2e/
-├── docs/
-│   └── scan-rules.md
-├── SPEC.md
-├── README.md
-├── package.json
-└── next.config.ts
+src/
+├── app/
+│   ├── page.tsx              # Main landing page with Scanner component
+│   ├── layout.tsx            # Next.js root layout
+│   └── api/
+│       └── scan/
+│           ├── github/
+│           │   └── route.ts  # GitHub repo scan API endpoint
+│           └── website/
+│               └── route.ts  # Website scan API endpoint
+└── lib/
+    ├── types.ts              # Shared TypeScript interfaces
+    ├── validation.ts         # Input validation utilities
+    ├── pdf.ts                # PDF report generation
+    └── scanners/
+        ├── website.ts        # Website security scanner
+        ├── github.ts         # GitHub repo scanner
+        └── rules/
+            └── index.ts      # GitHub scanning rules
 ```
 
 ---
 
-## 3. Data Model
+## Scanner Flow Diagram
 
-### Scans Table
-```sql
-CREATE TABLE scans (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  type TEXT CHECK (type IN ('github', 'website')) NOT NULL,
-  target_url TEXT NOT NULL,
-  status TEXT CHECK (status IN ('pending', 'running', 'completed', 'failed')) DEFAULT 'pending',
-  findings JSONB DEFAULT '[]',
-  severity_counts JSONB DEFAULT '{"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}',
-  user_id UUID REFERENCES auth.users,  -- Phase 2
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  completed_at TIMESTAMP WITH TIME ZONE
-);
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT                                   │
+│                   (page.tsx - Scanner)                           │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │ POST /api/scan/{type}
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    API ROUTE (route.ts)                          │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │
+│  │ Rate Limiter    │  │ Input          │  │ CORS           │    │
+│  │ (checkRate     │  │ Validation     │  │ Headers        │    │
+│  │  Limit)        │  │ (validation.ts)│  │               │    │
+│  └───────┬────────┘  └───────┬────────┘  └───────┬────────┘    │
+│          │                  │                   │               │
+│          │          ┌───────▼────────┐          │               │
+│          │          │ Validate URL  │◄─────────┘               │
+│          │          │ Return result │                            │
+│          │          └───────────────┘                            │
+└──────────┼─────────────────────────────────────────────────────┘
+           │ valid URL
+           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    SCANNER (scanners/)                           │
+│                                                                  │
+│  For GitHub:                   For Website:                      │
+│  ┌─────────────┐              ┌─────────────┐                    │
+│  │ fetchRepo  │              │ fetch()     │                    │
+│  │ Tree()     │              │ website    │                    │
+│  └──────┬─────┘              └──────┬─────┘                    │
+│         │ files                    │ HTML + headers             │
+│         ▼                          ▼                            │
+│  ┌─────────────┐              ┌─────────────┐                    │
+│  │ scanContent│              │ SECURITY_  │                    │
+│  │ (rules/)   │              │ CHECKS loop│                    │
+│  └──────┬─────┘              └──────┬─────┘                    │
+│         │ findings                 │ findings                  │
+│         └──────────┬───────────────┘                            │
+│                    ▼                                            │
+│           ┌─────────────────┐                                   │
+│           │ Build severity   │                                   │
+│           │ counts          │                                   │
+│           └─────────────────┘                                   │
+└─────────────────────────────────────────────────────────────────┘
+           │ ScanResult
+           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       PDF Generator                              │
+│                    (lib/pdf.ts)                                   │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │
+│  │ Header         │  │ Summary Box    │  │ Findings List  │    │
+│  │ (VibeChecker)  │  │ (severity      │  │ (sorted by    │    │
+│  │                │  │  counts)       │  │  severity)     │    │
+│  └────────────────┘  └────────────────┘  └────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Findings Schema
+---
+
+## Security Checks (Website Scanner)
+
+The website scanner runs **45+ security checks** organized by OWASP Top 10 categories:
+
+| Category | Checks | Examples |
+|----------|--------|----------|
+| **A01:2021** - Broken Access Control | IDOR, Directory Traversal, CORS Misconfig | Direct object references, path traversal |
+| **A02:2021** - Cryptographic Failures | HTTPS Missing, Mixed Content, Weak SSL | HTTP-only sites, mixed resource loading |
+| **A03:2021** - Injection | XSS (Stored/Reflected/DOM), SQL Injection, Cmd Injection | Form input sanitization, eval usage |
+| **A04:2021** - Insecure Design | Debug Endpoints, Missing Rate Limiting | Stack traces, no brute-force protection |
+| **A05:2021** - Security Misconfiguration | Missing CSP, X-Frame-Options, Server Version | Missing security headers |
+| **A06:2021** - Vulnerable Components | Old Dependencies, Unknown CDNs | jQuery 1.x, unverified third-party scripts |
+| **A07:2021** - Auth Failures | Password Autocomplete, Weak Auth | No MFA, form without protection |
+| **A08:2021** - Software Integrity | Missing SRI | External scripts without integrity hashes |
+| **A09:2021** - Logging & Monitoring | Missing Security.txt | No security disclosure policy |
+| **A10:2021** - SSRF | SSRF via URL Params | URL parameters accepting user input |
+| **A03:2025** - Supply Chain | Suspicious CDN, Unknown Scripts | Unverified third-party scripts |
+| **A05:2025** - Security Misconfiguration | Missing COOP/CORP/COEP | Cross-origin isolation headers |
+| **A10:2025** - Mishandling of Exceptions | Error Stack Exposed, Missing Error Boundaries | Stack traces, no React ErrorBoundary |
+
+---
+
+## GitHub Scanner Rules
+
+The GitHub scanner detects **13 types of vulnerabilities** in source code:
+
+| Rule ID | Severity | Description |
+|---------|----------|-------------|
+| SUPABASE001 | CRITICAL | Exposed Supabase credentials in code |
+| CSRF001 | CRITICAL | Missing CSRF protection |
+| SUPPLY001 | HIGH | Suspicious package name (slopsquatting) |
+| ERRHAND001 | HIGH | Exposed stack trace in code |
+| SEC-001 | CRITICAL | API key detected |
+| SEC-002 | CRITICAL | Private key in source code |
+| SEC-003 | CRITICAL | .env file reference |
+| SEC-004 | HIGH | Hardcoded password |
+| SEC-006 | HIGH | Eval usage |
+| SEC-007 | LOW | Console statement |
+| SEC-008 | CRITICAL | SQL injection pattern |
+| SEC-009 | HIGH | XSS vulnerability pattern |
+| SEC-010 | MEDIUM | Permissive CORS configuration |
+
+---
+
+## Input Validation
+
+All inputs are validated before scanning:
+
+### Website URL Validation
+- Must be valid URL format
+- Must use http or https protocol
+- Blocked: localhost, private IPs (10.x, 172.16-31.x, 192.168.x)
+- Maximum length: 2000 characters
+
+### GitHub URL Validation
+- Must be valid GitHub URL format
+- Must point to github.com
+- Must contain owner/repo path
+
+---
+
+## Rate Limiting
+
+In-memory rate limiting protects against abuse:
+
+| Limit | Value |
+|-------|-------|
+| Requests per window | 20 |
+| Window size | 60 seconds |
+| Minimum interval | 500ms |
+| Identifier | Client IP |
+
+Rate limit responses include:
+- `429 Too Many Requests` status
+- `Retry-After` header
+- `X-RateLimit-Remaining` header
+
+---
+
+## Error Handling
+
+### API Error Response Format
 ```typescript
-interface Finding {
-  id: string;
-  rule_id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  title: string;
-  description: string;
-  file_path?: string;
-  line_number?: number;
-  snippet?: string;
-  remediation: string;
-  references: string[];
-}
-```
-
-### Users Table (Phase 2)
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT UNIQUE NOT NULL,
-  plan TEXT DEFAULT 'free',
-  scans_used_today INT DEFAULT 0,
-  scans_limit INT DEFAULT 3,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
----
-
-## 4. API Design
-
-### POST /api/scan/github
-**Request:**
-```json
 {
-  "repoUrl": "https://github.com/user/repo"
+  error: string      // Human-readable error message
+  code: string      // Machine-readable error code
+  retryAfter?: number // For rate limit errors (ms)
 }
 ```
 
-**Response:**
-```json
-{
-  "scanId": "uuid",
-  "status": "completed",
-  "findings": [...],
-  "severityCounts": {...}
-}
-```
-
-### POST /api/scan/website
-**Request:**
-```json
-{
-  "url": "https://example.com"
-}
-```
-
-**Response:**
-```json
-{
-  "scanId": "uuid", 
-  "status": "completed",
-  "findings": [...],
-  "severityCounts": {...}
-}
-```
-
-### GET /api/scan/[id]
-Retrieve scan results by ID.
+### Error Codes
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| URL_REQUIRED | 400 | No URL provided |
+| URL_INVALID_FORMAT | 400 | Malformed URL |
+| URL_NOT_GITHUB | 400 | Non-GitHub URL for GitHub scan |
+| URL_LOCALHOST_BLOCKED | 400 | Localhost URLs not allowed |
+| URL_PRIVATE_IP_BLOCKED | 400 | Private IPs not allowed |
+| RATE_LIMITED | 429 | Too many requests |
+| REPO_NOT_FOUND | 404 | GitHub repo doesn't exist |
+| ACCESS_DENIED | 403 | Private repo or no access |
+| GITHUB_RATE_LIMIT | 429 | GitHub API rate limit |
+| FETCH_FAILED | 502 | Website unreachable |
+| TIMEOUT | 504 | Request timed out |
+| DNS_NOT_FOUND | 502 | DNS resolution failed |
 
 ---
 
-## 5. GitHub Scanner Logic
+## PDF Report Structure
 
-### Process Flow
-1. Parse GitHub URL → extract owner/repo
-2. Validate repository is public
-3. Fetch repository contents via GitHub API
-4. Recursively scan files for patterns
-5. Run security rules against file contents
-6. Aggregate findings
-7. Store results and return
+Generated PDF reports include:
 
-### GitHub API Rate Limits
-- Unauthenticated: 60 requests/hour
-- Authenticated (PAT): 5,000 requests/hour
-- Strategy: Use unauthenticated for free tier, PAT for Pro
-
-### Scan Rules (Phase 1)
-| Rule ID | Description | Severity |
-|---------|-------------|----------|
-| SEC-001 | API Key detected | Critical |
-| SEC-002 | Private key detected | Critical |
-| SEC-003 | .env file exposed | Critical |
-| SEC-004 | Hardcoded password | High |
-| SEC-005 | Outdated dependency | Medium |
-| SEC-006 | Eval usage | High |
-| SEC-007 | Debug console.log | Low |
-| SEC-008 | SQL injection pattern | Critical |
-| SEC-009 | XSS pattern | High |
-| SEC-010 | CORS misconfiguration | Medium |
+1. **Header** - VibeChecker branding, generation timestamp
+2. **Target Info** - Scanned URL/repository
+3. **Summary Box** - Severity counts by category
+4. **Findings List** - Sorted by severity (critical first)
+   - Severity badge
+   - Title and rule ID
+   - Description
+   - Recommended fix (green remediation box)
+5. **Footer** - Scan ID, generator attribution
 
 ---
 
-## 6. Website Scanner Logic
+## Design Decisions
 
-### Process Flow
-1. Fetch website HTML
-2. Parse response headers
-3. Run header security checks
-4. Scan for exposed paths/files
-5. Check for common vulnerabilities
-6. Aggregate findings
-7. Return results
+### 1. In-Memory Rate Limiting
+Using a simple Map-based rate limiter for this demo application. For production with multiple instances, consider Redis-based rate limiting.
 
-### Header Checks
-| Header | Expected | Severity if Missing |
-|--------|----------|---------------------|
-| Content-Security-Policy | Present | Medium |
-| Strict-Transport-Security | Present | High |
-| X-Frame-Options | DENY or SAMEORIGIN | Medium |
-| X-Content-Type-Options | nosniff | Low |
-| Referrer-Policy | strict-origin-when-cross-origin | Low |
+### 2. Cheerio for HTML Parsing
+Using `cheerio` instead of a full browser automation (Puppeteer/Playwright) for performance. This limits checks to static analysis only.
 
-### Path Checks
-- `/.env` - Sensitive
-- `/.git/config` - Information disclosure
-- `/admin` - Admin panel exposure
-- `/debug` - Debug endpoints
-- `/api-docs` - API documentation exposure
+### 3. Octokit for GitHub API
+Using `@octokit/rest` for GitHub API access. Rate limiting is handled server-side by Octokit.
+
+### 4. No Database
+Scan results are ephemeral - they're returned to the client but not stored. This keeps the service stateless and scalable.
 
 ---
 
-## 7. Scanning Rules Expansion (OWASP Top 10)
+## Pending Refactors
 
-Phase 2 will implement full OWASP Top 10 checks:
+The following items are documented for future improvement:
 
-1. **A01:2021 – Broken Access Control**
-   - IDOR detection
-   - Privilege escalation checks
-   - Mass assignment patterns
+1. **Rules Module Organization**: The `rules/index.ts` file contains both GitHub scanner rules and shared constants. Consider splitting into `rules/github.ts` and `rules/common.ts`.
 
-2. **A02:2021 – Cryptographic Failures**
-   - Weak hashing algorithms
-   - Hardcoded secrets
-   - Missing encryption
+2. **Security Check Registry**: The `SECURITY_CHECKS` array in `website.ts` is hardcoded. Consider loading from a configuration file for easier extension.
 
-3. **A03:2021 – Injection**
-   - SQL injection patterns
-   - Command injection
-   - LDAP/XPath injection
+3. **PDF Customization**: The PDF generator uses fixed layouts. Add options for:
+   - Custom header/footer
+   - Finding filters
+   - Export formats (JSON, CSV)
 
-4. **A04:2021 – Insecure Design**
-   - Missing rate limiting
-   - Business logic flaws
+4. **Parallel File Scanning**: The GitHub scanner processes files sequentially. For large repos, consider parallel processing with concurrency limits.
 
-5. **A05:2021 – Security Misconfiguration**
-   - Default credentials
-   - Debug mode enabled
-   - Unnecessary features
+5. **Client-Side Rate Limiting**: Currently only server-side rate limiting exists. Consider adding a client-side debounce/throttle.
 
-6. **A06:2021 – Vulnerable Components**
-   - CVE checking (via OSV.dev API)
-   - Outdated packages
-
-7. **A07:2021 – Authentication Failures**
-   - Weak session tokens
-   - Missing auth on sensitive routes
-
-8. **A08:2021 – Software and Data Integrity Failures**
-   - CI/CD misconfigurations
-   - Unverified dependencies
-
-9. **A09:2021 – Security Logging Failures**
-   - Missing logging indicators
-   - No audit trail
-
-10. **A10:2021 – SSRF**
-    - URL validation issues
-    - Internal endpoint access
+6. **Scanner Middleware**: API routes share similar patterns (CORS, rate limiting, validation). Consider extracting to shared middleware.
 
 ---
 
-## 8. Rate Limiting
+## Dependencies
 
-### Free Tier
-- 3 scans per day per IP
-- Rate limited via in-memory store (Upstash Redis optional)
-
-### Pro Tier
-- Unlimited scans
-- Priority queue
-
----
-
-## 9. Deployment (Dokploy)
-
-### Docker Configuration
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-### Environment Variables
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-GITHUB_TOKEN=           # Optional, for higher rate limits
-DATABASE_URL=
-```
-
-### Dokploy Setup
-1. Connect GitHub repo to Dokploy
-2. Configure build command: `npm run build`
-3. Configure start command: `npm start`
-4. Set environment variables
-5. Deploy to `vibe-checker` subdomain
-
----
-
-## 10. Security Considerations
-
-### Scanner Safety
-- Only scan public repositories/websites
-- Implement request throttling
-- No subdomain enumeration (too aggressive)
-- Log all scan requests for abuse detection
-
-### Application Security
-- RLS enabled on all database tables
-- Input validation on all endpoints
-- Rate limiting on API routes
-- CSP headers configured
-- No secrets in client-side code
-
----
-
-## 11. Future Enhancements
-
-- [ ] AI-powered remediation suggestions
-- [ ] Integration with GitHub Actions
-- [ ] Browser extension
-- [ ] Slack/Discord notifications
-- [ ] Team collaboration
-- [ ] API access for Pro/Enterprise
-- [ ] Custom rule creation
+| Package | Purpose |
+|---------|---------|
+| `next` | React framework |
+| `cheerio` | HTML parsing |
+| `@octokit/rest` | GitHub API |
+| `jspdf` | PDF generation |
+| `lucide-react` | Icons |

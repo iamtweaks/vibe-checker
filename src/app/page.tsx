@@ -3,31 +3,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { Shield, Zap, Globe, Github, Terminal, Lock, ArrowRight, FileCode, Sparkles, AlertTriangle, CheckCircle, Clock, Bug, BarChart3, Star } from 'lucide-react'
 import { downloadPDF } from '@/lib/pdf'
+import type { Severity, ScanResult, Finding } from '@/lib/types'
 
 type ScanType = 'github' | 'website'
-type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 
-interface Finding {
-  id: string
-  ruleId: string
-  severity: Severity
-  title: string
-  description: string
-  filePath?: string
-  lineNumber?: number
-  snippet?: string
-  remediation: string
-}
-
-interface ScanResult {
-  scanId: string
+interface ScanResult extends Omit<import('@/lib/types').ScanAPIResponse, 'type'> {
   type: ScanType
-  targetUrl: string
   status: 'pending' | 'running' | 'completed' | 'failed'
-  findings: Finding[]
-  severityCounts: Record<Severity, number>
-  scannedAt: string
-  scanDuration?: number
 }
 
 const SEVERITY_STYLES: Record<Severity, { bg: string; text: string; border: string; dot: string }> = {

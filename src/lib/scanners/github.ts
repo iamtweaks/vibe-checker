@@ -1,11 +1,9 @@
 import { Octokit } from '@octokit/rest'
-import { scanContent, type Finding } from './rules'
+import { scanContent } from './rules'
+import { parseGitHubUrl } from '@/lib/validation'
+import type { GitHubScanResult, Finding, SeverityCounts } from '@/lib/types'
 
-export interface GitHubScanResult {
-  findings: Finding[]
-  severityCounts: Record<string, number>
-  scannedFiles: number
-}
+// ============== Constants ==============
 
 // File extensions to scan
 const CODE_EXTENSIONS = [
@@ -15,28 +13,66 @@ const CODE_EXTENSIONS = [
   '.sh', '.bash', '.sql', '.md'
 ]
 
-// Directories to skip
-const SKIP_DIRS = ['node_modules', '.git', 'dist', 'build', 'coverage', '.next', '__pycache__', 'vendor', '.venv']
+// Directories to skip during scanning
+const SKIP_DIRS = [
+  'node_modules', '.git', 'dist', 'build', 'coverage',
+  '.next', '__pycache__', 'vendor', '.venv', 'target',
+  'bin', 'obj', '.cache', '.parcel-cache'
+]
 
-function parseGitHubUrl(url: string): { owner: string; repo: string; branch?: string } | null {
-  const patterns = [
-    /github\.com\/([^\/]+)\/([^\/]+?)(?:\/tree\/([^\/]+))?/,
-  ]
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern)
-    if (match) {
-      return {
-        owner: match[1],
-        repo: match[2].replace('.git', ''),
-        branch: match[3] || undefined,
-      }
-    }
-  }
-  return null
+// Maximum files to scan (prevent abuse)
+const MAX_FILES_TO_SCAN = 500
+
+// Maximum file size to scan (1MB)
+const MAX_FILE_SIZE = 1_000_000
+
+// ============== Utility Functions ==============
+
+/**
+ * Initialize severity counts
+ */
+function initSeverityCounts(): SeverityCounts {
+  return { critical: 0, high: 0, medium: 0, low: 0, info: 0 }
 }
 
-async function fetchRepoTree(octokit: Octokit, owner: string, repo: string, branch?: string): Promise<string[]> {
+/**
+ * Filter files to scan based on extensions and directories to skip
+ */
+function filterScannableFiles(tree: Array<{ path: string; type: string }>): string[] {
+  return tree
+    .filter((item) => 
+      item.type === 'blob' && 
+      CODE_EXTENSIONS.some(ext => item.path.endsWith(ext)) &&
+      !SKIP_DIRS.some(dir => item.path.includes(dir))
+    )
+    .slice(0, MAX_FILES_TO_SCAN)
+    .map(item => item.path)
+}
+
+/**
+ * Calculate severity counts from findings
+ */
+function calculateSeverityCounts(findings: Finding[]): SeverityCounts {
+  const counts = initSeverityCounts()
+  for (const f of findings) {
+    if (f.severity in counts) {
+      counts[f.severity]++
+    }
+  }
+  return counts
+}
+
+// ============== Core Functions ==============
+
+/**
+ * Fetch repository file tree
+ */
+async function fetchRepoTree(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  branch?: string
+): Promise<string[]> {
   try {
     const { data } = await octokit.rest.repos.get({
       owner,
@@ -44,30 +80,32 @@ async function fetchRepoTree(octokit: Octokit, owner: string, repo: string, bran
       ref: branch,
     })
     
-    const treeSha = (data as any).default_branch || 'main'
+    const defaultBranch = (data as any).default_branch || 'main'
     
     const treeResponse = await octokit.rest.git.getTree({
       owner,
       repo,
-      tree_sha: treeSha,
+      tree_sha: defaultBranch,
       recursive: 'true',
     })
     
-    return (treeResponse.data.tree as any[])
-      .filter((item: any) => 
-        item.type === 'blob' && 
-        CODE_EXTENSIONS.some(ext => item.path.endsWith(ext)) &&
-        !SKIP_DIRS.some(dir => item.path.includes(dir))
-      )
-      .slice(0, 500) // Limit to 500 files
-      .map((item: any) => item.path)
+    return filterScannableFiles((treeResponse.data.tree as any[]))
   } catch (error) {
     console.error('Error fetching repo tree:', error)
     return []
   }
 }
 
-async function fetchFileContent(octokit: Octokit, owner: string, repo: string, path: string, branch?: string): Promise<string | null> {
+/**
+ * Fetch content of a single file
+ */
+async function fetchFileContent(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  path: string,
+  branch?: string
+): Promise<string | null> {
   try {
     const { data } = await octokit.rest.repos.getContent({
       owner,
@@ -77,7 +115,13 @@ async function fetchFileContent(octokit: Octokit, owner: string, repo: string, p
     }) as any
     
     if (data.encoding === 'base64') {
-      return Buffer.from(data.content, 'base64').toString('utf-8')
+      const content = Buffer.from(data.content, 'base64').toString('utf-8')
+      // Skip files that are too large
+      if (content.length > MAX_FILE_SIZE) {
+        console.warn(`Skipping ${path} - file too large (>1MB)`)
+        return null
+      }
+      return content
     }
     return null
   } catch {
@@ -85,48 +129,82 @@ async function fetchFileContent(octokit: Octokit, owner: string, repo: string, p
   }
 }
 
-export async function scanGitHubRepo(url: string, githubToken?: string): Promise<GitHubScanResult> {
+/**
+ * Check if repository exists and is accessible
+ */
+async function checkRepoAccess(
+  octokit: Octokit,
+  owner: string,
+  repo: string
+): Promise<{ accessible: boolean; isPrivate: boolean; error?: string }> {
+  try {
+    const { status } = await octokit.rest.repos.get({ owner, repo })
+    return { accessible: true, isPrivate: status === 200 }
+  } catch (error: any) {
+    if (error.status === 404) {
+      return { accessible: false, isPrivate: false, error: 'Repository not found. Make sure it\'s public.' }
+    }
+    if (error.status === 403) {
+      return { accessible: false, isPrivate: true, error: 'Repository is private. Public repos only.' }
+    }
+    return { accessible: false, isPrivate: false, error: 'Could not access repository.' }
+  }
+}
+
+// ============== Main Scanner Function ==============
+
+export async function scanGitHubRepo(
+  url: string,
+  githubToken?: string
+): Promise<GitHubScanResult> {
+  const startTime = Date.now()
+  
+  // Parse GitHub URL
   const parsed = parseGitHubUrl(url)
-  if (!parsed) {
-    throw new Error('Invalid GitHub URL')
+  if (!parsed.isValid) {
+    throw new Error('Invalid GitHub URL. Use format: https://github.com/owner/repo')
   }
   
   const { owner, repo, branch } = parsed
   
+  // Initialize Octokit with optional auth
   const octokit = new Octokit({
     auth: githubToken,
   })
   
-  // Check if repo is public
-  try {
-    await octokit.rest.repos.get({ owner, repo })
-  } catch (error: any) {
-    if (error.status === 404) {
-      throw new Error('Repository not found. Make sure it\'s public.')
-    }
-    throw new Error('Could not access repository')
+  // Check repo access
+  const accessCheck = await checkRepoAccess(octokit, owner, repo)
+  if (!accessCheck.accessible) {
+    throw new Error(accessCheck.error || 'Could not access repository')
   }
   
+  // Fetch file tree
   const files = await fetchRepoTree(octokit, owner, repo, branch)
+  
+  if (files.length === 0) {
+    return {
+      findings: [],
+      severityCounts: initSeverityCounts(),
+      scannedFiles: 0,
+      scanDuration: Date.now() - startTime,
+    }
+  }
+  
+  // Scan files
   const findings: Finding[] = []
   
   for (const filePath of files) {
     const content = await fetchFileContent(octokit, owner, repo, filePath, branch)
-    if (content && content.length < 1_000_000) { // Skip files > 1MB
+    if (content) {
       const fileFindings = scanContent(content, filePath)
       findings.push(...fileFindings)
     }
   }
   
-  // Count severities
-  const severityCounts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 }
-  for (const f of findings) {
-    severityCounts[f.severity] = (severityCounts[f.severity] || 0) + 1
-  }
-  
   return {
     findings,
-    severityCounts,
+    severityCounts: calculateSeverityCounts(findings),
     scannedFiles: files.length,
+    scanDuration: Date.now() - startTime,
   }
 }
