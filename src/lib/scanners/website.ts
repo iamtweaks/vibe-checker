@@ -585,7 +585,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'high',
     cwe: 'CWE-209',
     owasp: 'A10:2025',
-    check: ($: cheerio.CherioAPI, url: string) => {
+    check: ($: cheerio.CheerioAPI, url: string) => {
       if (!url) return false
       const bodyText = $('body').text().toLowerCase()
       const errorPatterns = [

@@ -7,8 +7,8 @@ import type { ValidationResult, GitHubParsedURL } from './types'
 
 // ============== URL Validation ==============
 
-const HTTPS_PROTOCOL = 'https'
-const HTTP_PROTOCOL = 'http'
+const HTTPS_PROTOCOL = 'https:'
+const HTTP_PROTOCOL = 'http:'
 const GITHUB_HOSTNAME = 'github.com'
 
 /**
