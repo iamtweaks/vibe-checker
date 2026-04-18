@@ -805,21 +805,15 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-slate-200 bg-white py-10">
+    <footer className="border-t border-slate-200 bg-white py-8">
       <div className="max-w-5xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-semibold">VibeChecker</span>
-          </div>
-          <div className="text-sm text-slate-500 text-center">Free security scanner for vibe-coded apps. Built for developers who ship fast and safe.</div>
-          <div className="flex items-center gap-6 text-sm text-slate-500">
-            <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition">GitHub</a>
-            <a href="#how" className="hover:text-slate-900 transition">How It Works</a>
-            <a href="#scanner" className="hover:text-slate-900 transition">Scan Now</a>
-          </div>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <a href="#scanner" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition">
+            Free Security Scanner for Vibe-Coded Apps
+          </a>
+          <p className="text-sm text-slate-400">
+            Copyright © {new Date().getFullYear()}
+          </p>
         </div>
       </div>
     </footer>
