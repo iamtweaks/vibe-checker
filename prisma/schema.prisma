@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Scan {
+  id             String   @id @default(cuid())
+  targetUrl      String
+  scanType       String
+  findingsJson   String
+  severityCounts String
+  createdAt      DateTime @default(now())
+
+  @@index([targetUrl])
+  @@index([scanType])
+  @@index([createdAt])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  tier      String   @default("free")
+  createdAt DateTime @default(now())
+
+  apiKeys ApiKey[]
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  keyHash   String   @unique
+  createdAt DateTime @default(now())
+  lastUsed  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@index([userId])
+}
