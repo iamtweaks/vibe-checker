@@ -1,0 +1,26 @@
+name: VibeChecker
+description: Automatically scan pull requests for code quality and security issues
+homepage_url: https://vibecheck.dev
+user_authentication: false
+setup_on_use: true
+
+# Webhook configuration
+notify:
+  enabled: true
+  url: https://your-server.com/api/webhooks/github
+  secret: auto_generate
+
+# Permissions
+default_permissions:
+  contents: read
+  pull_requests: write
+  metadata: read
+  checks: read
+
+# Subscribe to events
+default_events:
+  - pull_request
+
+# Repository selection
+request_access:
+  authorized_on_creation: false
