@@ -283,8 +283,8 @@ export async function POST(request: NextRequest) {
           for (const finding of findings) {
             allFindings.push({
               filename: file.filename,
-              line: added.line + finding.line - 1,
               ...finding,
+              line: added.line + finding.line - 1,
             });
           }
         }
