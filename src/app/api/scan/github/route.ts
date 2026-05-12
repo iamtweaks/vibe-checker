@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateGitHubUrl, parseGitHubUrl, checkRateLimit } from '@/lib/validation'
 import { scanGitHubRepo } from '@/lib/scanners/github'
-import type { ScanAPIResponse, SeverityCounts } from '@/lib/types'
+import { prisma } from '@/lib/db'
+import type { ScanAPIResponse, SeverityCounts, Finding } from '@/lib/types'
 
 // CORS headers for API responses
 const corsHeaders = {
@@ -86,6 +87,16 @@ export async function POST(request: NextRequest) {
       scannedFiles: result.scannedFiles,
       scanDuration: result.scanDuration,
     }
+
+    // Persist scan to database
+    await prisma.scan.create({
+      data: {
+        targetUrl: url.trim(),
+        scanType: 'github',
+        findingsJson: JSON.stringify(result.findings as Finding[]),
+        severityCounts: JSON.stringify(result.severityCounts),
+      },
+    })
 
     return NextResponse.json(response, {
       headers: {
