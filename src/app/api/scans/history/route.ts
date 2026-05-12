@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.scan.count({ where })
 
-    const scansWithParsedCounts = scans.map((scan) => ({
+    const scansWithParsedCounts = scans.map((scan: { severityCounts: string }) => ({
       ...scan,
       severityCounts: JSON.parse(scan.severityCounts),
     }))
