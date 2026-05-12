@@ -162,17 +162,14 @@ function HeroGlints() {
 function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/50">
-      <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+        <a href="#" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
             <Shield className="w-5 h-5 text-white" />
           </div>
-          <span className="font-semibold text-lg tracking-tight">VibeChecker</span>
-        </div>
-        <nav className="flex items-center gap-8 text-sm">
-          <a href="#features" className="text-slate-600 hover:text-slate-900 transition-colors">Features</a>
-          <a href="#how" className="text-slate-600 hover:text-slate-900 transition-colors">How it Works</a>
-          <a href="#stats" className="text-slate-600 hover:text-slate-900 transition-colors">Stats</a>
+          <span className="font-semibold text-base md:text-lg tracking-tight">VibeChecker</span>
+        </a>
+        <nav className="flex items-center gap-4 md:gap-6 text-sm">
           <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-900 transition-colors">
             <Github className="w-5 h-5" />
           </a>
@@ -276,34 +273,34 @@ function Stats() {
 
 function RealityCheck() {
   return (
-    <section className="py-16 md:py-20 bg-gradient-to-b from-white to-slate-50">
-      <div className="max-w-5xl mx-auto px-6">
+    <section className="py-12 md:py-20 bg-gradient-to-b from-white to-slate-50">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
         <FadeIn>
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-sm text-red-700 mb-4">
+          <div className="text-center mb-8 md:mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-xs md:text-sm text-red-700 mb-3 md:mb-4">
               <AlertTriangle className="w-4 h-4" />
               <span>The Data Is Alarming</span>
             </div>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 mb-3">
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">
               What the Research Says
             </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto text-sm md:text-base">
+            <p className="text-slate-600 max-w-2xl mx-auto text-xs md:text-sm">
               Escape.tech scanned 5,600 vibe-coded apps and found over 2,000 vulnerabilities and 400 exposed secrets. Tenzai tested 15 apps built with 5 AI coding tools and found 69 vulnerabilities including critical SSRF and injection flaws.
             </p>
           </div>
         </FadeIn>
 
         <FadeIn delay={100}>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10">
             {[
               { stat: '45%', label: 'of AI-generated code contains vulnerabilities', source: 'Kaspersky' },
               { stat: '2.74x', label: 'more XSS vulnerabilities in AI co-written code', source: 'CodeRabbit' },
               { stat: '10.3%', label: 'of Lovable apps have critical RLS flaws', source: 'Security Audit' },
               { stat: '69', label: 'vulnerabilities found in 15 AI-built apps', source: 'Tenzai Research' },
             ].map((item, i) => (
-              <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 text-center card-hover">
-                <div className="text-3xl font-bold text-red-600 mb-1">{item.stat}</div>
-                <div className="text-sm text-slate-600 mb-2">{item.label}</div>
+              <div key={i} className="bg-white rounded-xl border border-slate-200 p-3 md:p-5 text-center card-hover">
+                <div className="text-2xl md:text-3xl font-bold text-red-600 mb-1">{item.stat}</div>
+                <div className="text-xs text-slate-600 mb-1 md:mb-2">{item.label}</div>
                 <div className="text-xs text-slate-400">{item.source}</div>
               </div>
             ))}
@@ -311,22 +308,22 @@ function RealityCheck() {
         </FadeIn>
 
         <FadeIn delay={200}>
-          <div className="bg-slate-900 rounded-2xl p-6 md:p-8">
-            <div className="text-center mb-8">
-              <h3 className="text-xl font-semibold text-white mb-2">Why Vibe-Coded Apps Are at Risk</h3>
-              <p className="text-sm text-slate-400">AI models optimize for working code, not secure code.</p>
+          <div className="bg-slate-900 rounded-2xl p-4 md:p-8">
+            <div className="text-center mb-6 md:mb-8">
+              <h3 className="text-lg md:text-xl font-semibold text-white mb-2">Why Vibe-Coded Apps Are at Risk</h3>
+              <p className="text-xs md:text-sm text-slate-400">AI models optimize for working code, not secure code.</p>
             </div>
-            <div className="grid md:grid-cols-3 gap-6 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 text-left">
               <div>
-                <div className="text-emerald-400 font-semibold text-sm mb-2">🚀 Speed Creates Blind Spots</div>
+                <div className="text-emerald-400 font-semibold text-xs md:text-sm mb-2">🚀 Speed Creates Blind Spots</div>
                 <p className="text-slate-300 text-xs">AI coding tools build full-stack apps in minutes. They skip authentication checks, expose database credentials, misconfigure Supabase RLS policies, and leave API routes wide open.</p>
               </div>
               <div>
-                <div className="text-emerald-400 font-semibold text-sm mb-2">🔓 The Attack Surface Is Growing</div>
+                <div className="text-emerald-400 font-semibold text-xs md:text-sm mb-2">🔓 The Attack Surface Is Growing</div>
                 <p className="text-slate-300 text-xs">With Google AI Studio offering full-stack vibe coding with Firebase integration, and Lovable creating 200,000 new projects daily, attackers know where to look.</p>
               </div>
               <div>
-                <div className="text-emerald-400 font-semibold text-sm mb-2">✅ VibeCheck Catches These Issues</div>
+                <div className="text-emerald-400 font-semibold text-xs md:text-sm mb-2">✅ VibeCheck Catches These Issues</div>
                 <p className="text-slate-300 text-xs">Free, no signup required, gives you a security grade in seconds. Catches issues before your users do.</p>
               </div>
             </div>
@@ -631,25 +628,25 @@ Do not explain what you would do — provide actual working code.`
 
 function HowItWorks() {
   return (
-    <section id="how" className="py-16 md:py-20 bg-white">
-      <div className="max-w-5xl mx-auto px-6">
+    <section id="how" className="py-12 md:py-20 bg-white">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
         <FadeIn>
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 mb-3">Two Ways to Scan</h2>
-            <p className="text-slate-600 max-w-xl mx-auto">Most security scanners only do one or the other. VibeCheck does both.</p>
+          <div className="text-center mb-8 md:mb-14">
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">Two Ways to Scan</h2>
+            <p className="text-slate-600 max-w-xl mx-auto text-sm md:text-base">Most security scanners only do one or the other. VibeCheck does both.</p>
           </div>
         </FadeIn>
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <FadeIn delay={100}>
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 md:p-8 text-white">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <Github className="w-6 h-6 text-emerald-400" />
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-4 md:p-6 lg:p-8 text-white h-full">
+              <div className="flex items-center gap-3 mb-3 md:mb-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <Github className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
                 </div>
-                <h3 className="text-xl font-semibold">Source Code Scanner</h3>
+                <h3 className="text-lg md:text-xl font-semibold">Source Code Scanner</h3>
               </div>
-              <p className="text-slate-300 text-sm mb-6">Analyzes your GitHub repository for hardcoded secrets, exposed credentials, misconfigurations, and vulnerable patterns in your code.</p>
-              <div className="space-y-2">
+              <p className="text-slate-300 text-xs md:text-sm mb-4 md:mb-6">Analyzes your GitHub repository for hardcoded secrets, exposed credentials, misconfigurations, and vulnerable patterns in your code.</p>
+              <div className="space-y-1.5 md:space-y-2">
                 {[
                   'Exposed API keys and secrets (OpenAI, Stripe, Supabase)',
                   'Firebase misconfigurations without proper security rules',
@@ -665,8 +662,8 @@ function HowItWorks() {
                   'Vulnerable dependencies in package.json',
                   'Missing rate limiting on public API routes',
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <div key={i} className="flex items-start gap-2 text-xs md:text-sm text-slate-300">
+                    <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -674,15 +671,15 @@ function HowItWorks() {
             </div>
           </FadeIn>
           <FadeIn delay={200}>
-            <div className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-2xl p-6 md:p-8 text-white">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Globe className="w-6 h-6 text-emerald-200" />
+            <div className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-2xl p-4 md:p-6 lg:p-8 text-white h-full">
+              <div className="flex items-center gap-3 mb-3 md:mb-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Globe className="w-5 h-5 md:w-6 md:h-6 text-emerald-200" />
                 </div>
-                <h3 className="text-xl font-semibold">Live Site Scanner</h3>
+                <h3 className="text-lg md:text-xl font-semibold">Live Site Scanner</h3>
               </div>
-              <p className="text-emerald-100/80 text-sm mb-6">Checks your deployed application for security headers, exposed files, CORS misconfigurations, and technology fingerprints.</p>
-              <div className="space-y-2">
+              <p className="text-emerald-100/80 text-xs md:text-sm mb-4 md:mb-6">Checks your deployed application for security headers, exposed files, CORS misconfigurations, and technology fingerprints.</p>
+              <div className="space-y-1.5 md:space-y-2">
                 {[
                   'Content-Security-Policy (CSP) header',
                   'HSTS (HTTP Strict Transport Security)',
@@ -695,8 +692,8 @@ function HowItWorks() {
                   'Cookie security flags (HttpOnly, Secure, SameSite)',
                   'Technology fingerprinting in headers',
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm text-emerald-100">
-                    <CheckCircle className="w-4 h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+                  <div key={i} className="flex items-start gap-2 text-xs md:text-sm text-emerald-100">
+                    <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -721,23 +718,23 @@ function Features() {
     { icon: Bug, title: 'Supabase RLS Scan', description: 'Find Row Level Security misconfigurations — the #1 issue in vibe-coded apps.' },
   ]
   return (
-    <section id="features" className="py-16 md:py-20 bg-slate-50">
-      <div className="max-w-5xl mx-auto px-6">
+    <section id="features" className="py-12 md:py-20 bg-slate-50">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
         <FadeIn>
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 mb-3">Everything You Need</h2>
-            <p className="text-slate-600 max-w-xl mx-auto">Professional-grade security scanning, completely free</p>
+          <div className="text-center mb-8 md:mb-14">
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">Everything You Need</h2>
+            <p className="text-slate-600 max-w-xl mx-auto text-sm md:text-base">Professional-grade security scanning, completely free</p>
           </div>
         </FadeIn>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
           {features.map((feature, i) => (
             <FadeIn key={i} delay={i * 100}>
-              <div className="feature-card group p-5 md:p-6 rounded-2xl bg-white border border-slate-200">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center mb-4 transition-colors">
-                  <feature.icon className="w-5 h-5 md:w-6 md:h-6 text-emerald-600" />
+              <div className="feature-card group p-4 md:p-5 lg:p-6 rounded-2xl bg-white border border-slate-200 h-full">
+                <div className="w-9 h-9 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center mb-3 md:mb-4 transition-colors">
+                  <feature.icon className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-emerald-600" />
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2 text-sm md:text-base">{feature.title}</h3>
-                <p className="text-xs md:text-sm text-slate-600">{feature.description}</p>
+                <h3 className="font-semibold text-slate-900 mb-1 md:mb-2 text-xs md:text-sm lg:text-base">{feature.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">{feature.description}</p>
               </div>
             </FadeIn>
           ))}
@@ -754,25 +751,25 @@ function Testimonials() {
     { quote: 'Finally a free scanner that actually works. Built right into my workflow.', author: 'Alex Thompson', role: 'CTO' },
   ]
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-5xl mx-auto px-6">
+    <section className="py-12 md:py-20 bg-white">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
         <FadeIn>
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 mb-3">Loved by Developers</h2>
-            <p className="text-slate-600">Join thousands of developers who ship safer code</p>
+          <div className="text-center mb-8 md:mb-14">
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">Loved by Developers</h2>
+            <p className="text-slate-600 text-sm md:text-base">Join thousands of developers who ship safer code</p>
           </div>
         </FadeIn>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {testimonials.map((t, i) => (
             <FadeIn key={i} delay={i * 100}>
-              <div className="card-hover p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                <div className="flex gap-1 mb-4">
+              <div className="card-hover p-4 md:p-6 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex gap-1 mb-3 md:mb-4">
                   {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}
                 </div>
-                <p className="text-slate-700 mb-4">"{t.quote}"</p>
+                <p className="text-slate-700 text-sm mb-3 md:mb-4">"{t.quote}"</p>
                 <div>
-                  <div className="font-medium text-slate-900">{t.author}</div>
-                  <div className="text-sm text-slate-500">{t.role}</div>
+                  <div className="font-medium text-slate-900 text-sm">{t.author}</div>
+                  <div className="text-xs text-slate-500">{t.role}</div>
                 </div>
               </div>
             </FadeIn>
@@ -805,21 +802,15 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-slate-200 bg-white py-10">
+    <footer className="border-t border-slate-200 bg-white py-8">
       <div className="max-w-5xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-semibold">VibeChecker</span>
-          </div>
-          <div className="text-sm text-slate-500 text-center">Free security scanner for vibe-coded apps. Built for developers who ship fast and safe.</div>
-          <div className="flex items-center gap-6 text-sm text-slate-500">
-            <a href="https://github.com/iamtweaks/vibe-checker" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition">GitHub</a>
-            <a href="#how" className="hover:text-slate-900 transition">How It Works</a>
-            <a href="#scanner" className="hover:text-slate-900 transition">Scan Now</a>
-          </div>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <a href="#scanner" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition">
+            Free Security Scanner for Vibe-Coded Apps
+          </a>
+          <p className="text-sm text-slate-400">
+            Copyright © {new Date().getFullYear()}
+          </p>
         </div>
       </div>
     </footer>

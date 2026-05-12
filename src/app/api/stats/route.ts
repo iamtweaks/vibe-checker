@@ -2,38 +2,35 @@ import { NextResponse } from 'next/server'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
-const DATA_FILE = '/tmp/vibe-checker-stats.json'
+const DATA_FILE = process.env.STATS_FILE_PATH || join(process.cwd(), '.stats.json')
 
 interface Stats {
   totalScans: number
-  uniqueSites: Set<string>
+  uniqueSites: number
+  sites: string[]
   lastUpdated: string
 }
 
-function getStats(): { totalScans: number; uniqueSites: number; sites: string[] } {
+function getStats(): Stats {
   try {
     if (existsSync(DATA_FILE)) {
       const data = JSON.parse(readFileSync(DATA_FILE, 'utf-8'))
       return {
         totalScans: data.totalScans || 0,
         uniqueSites: data.uniqueSites || 0,
-        sites: data.sites || []
+        sites: data.sites || [],
+        lastUpdated: data.lastUpdated || ''
       }
     }
   } catch (e) {
     console.error('Error reading stats:', e)
   }
-  return { totalScans: 0, uniqueSites: 0, sites: [] }
+  return { totalScans: 0, uniqueSites: 0, sites: [], lastUpdated: '' }
 }
 
-function saveStats(stats: { totalScans: number; sites: string[] }) {
+function saveStats(stats: Stats) {
   try {
-    const data = {
-      ...stats,
-      uniqueSites: stats.sites.length,
-      lastUpdated: new Date().toISOString()
-    }
-    writeFileSync(DATA_FILE, JSON.stringify(data, null, 2))
+    writeFileSync(DATA_FILE, JSON.stringify(stats, null, 2))
   } catch (e) {
     console.error('Error saving stats:', e)
   }
@@ -77,12 +74,14 @@ export async function POST(request: Request) {
     if (!stats.sites.includes(siteKey)) {
       stats.sites.push(siteKey)
       stats.totalScans += 1
+      stats.uniqueSites = stats.sites.length
+      stats.lastUpdated = new Date().toISOString()
       saveStats(stats)
     }
 
     return NextResponse.json({
       totalScans: stats.totalScans,
-      uniqueSites: stats.sites.length,
+      uniqueSites: stats.uniqueSites,
       sites: stats.sites
     })
   } catch (e) {
