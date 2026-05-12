@@ -110,6 +110,188 @@ vibe-checker/
 | WEB-007 | Debug Endpoints | 🟠 High |
 | WEB-008 | Mixed Content | 🟡 Medium |
 
+## 🌐 REST API
+
+VibeChecker provides a REST API for programmatic access.
+
+### Base URL
+
+```
+https://vibecheck.dev/api
+```
+
+### Endpoints
+
+#### POST /scan
+
+Perform a security scan on a GitHub repository or website.
+
+**Request Headers**
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | Must be `application/json` |
+| `Authorization` | No | Bearer token for GitHub private repos |
+| `X-API-Key` | No | API key for authenticated requests |
+
+**Request Body**
+
+```json
+{
+  "url": "https://github.com/user/repo",
+  "type": "github"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | Yes | Target URL (GitHub repo or website) |
+| `type` | string | Yes | Scan type: `"github"` or `"website"` |
+| `apiKey` | string | No | GitHub token for private repos |
+
+**Example Request**
+
+```bash
+curl -X POST https://vibecheck.dev/api/scan \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "url": "https://github.com/iamtweaks/vibe-checker",
+    "type": "github"
+  }'
+```
+
+**Success Response**
+
+```json
+{
+  "success": true,
+  "scanId": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "github",
+  "targetUrl": "https://github.com/iamtweaks/vibe-checker",
+  "status": "completed",
+  "findings": [
+    {
+      "id": "sec-001",
+      "ruleId": "SEC-001",
+      "severity": "critical",
+      "title": "API Key Detected",
+      "description": "Potential API key found in source code",
+      "filePath": "src/config.js",
+      "lineNumber": 42,
+      "snippet": "const API_KEY = 'ghp_xxxx'",
+      "remediation": "Remove hardcoded secrets and use environment variables"
+    }
+  ],
+  "severityCounts": {
+    "critical": 1,
+    "high": 0,
+    "medium": 2,
+    "low": 5,
+    "info": 10
+  },
+  "scannedAt": "2026-05-12T17:10:00Z",
+  "scannedFiles": 150,
+  "scanDuration": 3200
+}
+```
+
+#### GET /scan/:id
+
+Retrieve a scan result by its ID.
+
+**Example Request**
+
+```bash
+curl https://vibecheck.dev/api/scan/550e8400-e29b-41d4-a716-446655440000
+```
+
+**Success Response**
+
+Same as POST response with `success: true`.
+
+#### GET /scan
+
+List recent scans (for debugging).
+
+**Query Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | number | 10 | Max number of scans to return (max 100) |
+
+**Example Request**
+
+```bash
+curl "https://vibecheck.dev/api/scan?limit=5"
+```
+
+### Response Format
+
+All responses include a `success` boolean field indicating whether the request succeeded.
+
+**Error Response**
+
+```json
+{
+  "success": false,
+  "error": "Rate limit exceeded",
+  "code": "RATE_LIMITED",
+  "retryAfter": 30000
+}
+```
+
+**Error Codes**
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `URL_REQUIRED` | 400 | URL field is missing |
+| `TYPE_REQUIRED` | 400 | Type field is missing |
+| `INVALID_TYPE` | 400 | Type must be "github" or "website" |
+| `INVALID_JSON` | 400 | Request body is not valid JSON |
+| `INVALID_API_KEY` | 401 | API key is invalid |
+| `RATE_LIMITED` | 429 | Too many requests |
+| `REPO_NOT_FOUND` | 404 | GitHub repo not found or private |
+| `GITHUB_RATE_LIMIT` | 429 | GitHub API rate limit exceeded |
+| `SCAN_FAILED` | 500 | Scan processing failed |
+
+### Rate Limits
+
+- **20 requests per minute** per IP address
+- **500ms** minimum interval between requests
+- Rate limit info returned in headers:
+  - `X-RateLimit-Remaining`: Requests remaining
+  - `Retry-After`: Seconds until rate limit resets
+
+### SDK Examples
+
+**Node.js**
+
+```javascript
+const response = await fetch('https://vibecheck.dev/api/scan', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    url: 'https://github.com/user/repo',
+    type: 'github'
+  })
+})
+const result = await response.json()
+console.log(result.scanId)
+```
+
+**Python**
+
+```python
+import requests
+
+response = requests.post('https://vibecheck.dev/api/scan', json={
+    'url': 'https://github.com/user/repo',
+    'type': 'github'
+})
+result = response.json()
+print(result['scanId'])
+```
+
 ## 💰 Pricing
 
 | Feature | Free | Pro |
