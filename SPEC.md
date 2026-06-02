@@ -131,16 +131,60 @@
 - Skip: node_modules, .git, binaries, >1MB files
 
 **Rules to Implement (MVP):**
-| ID | Title | Severity |
-|----|-------|----------|
-| SEC-001 | API Key Detected | Critical |
-| SEC-002 | Private Key Detected | Critical |
-| SEC-003 | .env File Exposed | Critical |
-| SEC-004 | Hardcoded Password | High |
-| SEC-007 | Console.log Debug Statement | Low |
-| SEC-008 | SQL Injection Pattern | Critical |
-| SEC-009 | XSS Vulnerability Pattern | High |
-| SEC-010 | CORS Misconfiguration | Medium |
+| ID | Title | Severity | OWASP |
+|----|-------|----------|-------|
+| SEC-001 | API Key Detected | Critical | CWE-798 |
+| SEC-002 | Private Key Detected | Critical | CWE-320 |
+| SEC-003 | .env File Exposed | Critical | CWE-552 |
+| SEC-004 | Hardcoded Password | High | CWE-259 |
+| SEC-006 | Eval Usage | High | CWE-95 |
+| SEC-007 | Console.log Debug Statement | Low | CWE-489 |
+| SEC-008 | SQL Injection Pattern | Critical | A03:2021 |
+| SEC-009 | XSS Vulnerability Pattern | High | A03:2021 |
+| SEC-010 | CORS Misconfiguration | High | A01:2021 |
+| SEC-011 | Vue Devtools Enabled | High | CWE-489 |
+| SEC-012 | React DevTools Enabled | High | CWE-489 |
+| SEC-013 | Angular Debug Tools | High | CWE-489 |
+| SEC-014 | .git Directory Exposed | Critical | CWE-552 |
+| SEC-015 | Debug Mode Enabled | High | CWE-489 |
+| SEC-016 | Local .env Reference | Critical | CWE-552 |
+| SEC-017 | Config File Secrets | Critical | CWE-552 |
+| SEC-018 | X-Content-Type-Options Disabled | Medium | CWE-693 |
+| SEC-019 | Debug Env Variables | Low | CWE-489 |
+| AUTH001 | JWT Algorithm Confusion | Critical | A07:2021 |
+| RATE001 | Rate Limiting Disabled | High | A07:2021 |
+| CSRF001 | Missing CSRF Protection | Critical | A07:2021 |
+| CORS002 | CORS Credentials Wildcard | Critical | A01:2021 |
+| ERRHAND001 | Exposed Stack Trace | High | A10:2025 |
+| ERRHAND002 | Exception Handler Disabled | High | A10:2025 |
+| SUPABASE001 | Exposed Supabase Credentials | Critical | A01:2021 |
+| SUPABASE-RLS001 | Table Without RLS Enabled | Critical | A01:2021 |
+| SUPABASE-RLS002 | Overly Permissive RLS Policy | High | A01:2021 |
+| SUPABASE-RLS003 | Service Role Key Exposed | Critical | A01:2021 |
+| SUPABASE-RLS004 | Anon Key in Server Context | High | A01:2021 |
+| SUPABASE-RLS005 | Missing User Ownership Check | High | A01:2021 |
+| LOVABLE001 | Lovable Supabase Without RLS | High | A01:2021 |
+| LOVABLE002 | Lovable Unprotected API Routes | High | A01:2021 |
+| BOLT001 | Bolt SvelteKit Without Auth | High | A01:2021 |
+| BOLT002 | Bolt PUBLIC_ Prefix Secrets | High | A02:2021 |
+| CURSOR001 | Cursor Next.js Without Auth | High | A01:2021 |
+| CURSOR002 | Cursor Middleware Issues | Medium | A01:2021 |
+| V0001 | v0 dangerouslySetInnerHTML | High | A03:2021 |
+| V0002 | v0 Server Actions Without Auth | High | A01:2021 |
+| REPLIT001 | Replit Secrets in .replit | Critical | CWE-552 |
+| REPLIT002 | Replit Express Without Auth | High | A01:2021 |
+| SUPPLY001 | Slopsquatting Risk | High | A03:2025 |
+| SUPPLY001-TYPO | Typo-squatting Package | High | A03:2025 |
+| SUPPLY002 | Unpinned Dependencies | Medium | A06:2021 |
+| SUPPLY003 | Shell Injection in npm Scripts | Critical | A03:2025 |
+| SUPPLY004 | .npmrc Contains Credentials | Critical | A03:2025 |
+| SUPPLY005 | Lock File Missing | Medium | A06:2021 |
+| DEP001 | Known Vulnerable Package | Medium | A06:2021 |
+| DEP002 | Dev Dependencies in Prod | Medium | A06:2021 |
+| SUPPLY006 | Actions Secrets May Be Logged | High | A03:2025 |
+| SUPPLY007 | Malicious npm Postinstall | Critical | A03:2025 |
+| SUPPLY008 | Suspicious Test Package | High | A03:2025 |
+| SUPPLY009 | Non-default npm Registry | High | A03:2025 |
 
 ### Website Scanner
 
@@ -188,27 +232,37 @@
 ## 5. Technical Constraints
 
 - **No authentication** for MVP
-- **No database** (Phase 2) - results stored in memory/URL
+- **Supabase Database** (Phase 2 - IMPLEMENTED) - PostgreSQL via Supabase
+  - Stores websites, scans, and scan_findings
+  - Row Level Security enabled for public access
 - **Rate limiting:** 10 requests/minute per IP (hardcoded)
 - **No PDF generation** in MVP
 - **No user accounts**
 
 ---
 
-## 6. File Structure (MVP)
+## 6. File Structure
 
 ```
 src/
+├── utils/
+│   └── supabase/
+│       ├── client.ts           # Browser client
+│       ├── server.ts           # Server component client
+│       └── middleware.ts        # Middleware helper
+├── middleware.ts               # Supabase session refresh
 ├── app/
 │   ├── page.tsx                 # Landing + Scanner
 │   ├── layout.tsx               # Root layout with fonts
 │   ├── globals.css              # Tailwind + custom CSS
 │   └── api/
-│       └── scan/
-│           ├── github/
-│           │   └── route.ts     # POST handler
-│           └── website/
-│               └── route.ts     # POST handler
+│       ├── scan/
+│       │   ├── github/
+│       │   │   └── route.ts     # POST handler
+│       │   └── website/
+│       │       └── route.ts     # POST handler
+│       └── stats/
+│           └── route.ts         # GET/POST scan stats to Supabase
 ├── components/
 │   ├── Scanner.tsx              # Main scanner component
 │   ├── ScanForm.tsx             # URL input form
@@ -224,7 +278,7 @@ src/
     │   ├── github.ts
     │   ├── website.ts
     │   └── rules/
-    │       ├── index.ts         # All rules
+    │       ├── index.ts         # All rules (~64 rules)
     │       └── patterns.ts      # Regex patterns
     └── utils.ts                 # Helpers
 ```
@@ -258,7 +312,20 @@ src/
 - [ ] User authentication
 - [ ] Database storage
 - [ ] PDF reports
-- [ ] OWASP Top 10 (Phase 2)
+### OWASP Top 10 2021 & 2025 Coverage (Phase 2 - IMPLEMENTED)
+
+- [x] **A01:2021 Broken Access Control** - RLS checks, CORS, IDOR, directory traversal
+- [x] **A02:2021 Cryptographic Failures** - HTTPS checks, mixed content, weak SSL
+- [x] **A03:2021 Injection** - SQL injection, XSS (stored, reflected, DOM), cmd injection
+- [x] **A04:2021 Insecure Design** - Debug endpoints, rate limiting
+- [x] **A05:2021 Security Misconfiguration** - CSP, HSTS, X-Frame-Options, headers
+- [x] **A06:2021 Vulnerable Components** - Dependency checks, SRI, CVE detection
+- [x] **A07:2021 Auth Failures** - JWT, CSRF, weak auth, rate limiting
+- [x] **A08:2021 Software Integrity** - SRI, supply chain checks
+- [x] **A09:2021 Logging Failures** - security.txt detection
+- [x] **A10:2021 SSRF** - URL parameter checks
+- [x] **A03:2025 Supply Chain Failures** - Slopsquatting, typosquatting, npm scripts
+- [x] **A10:2025 Mishandling of Exceptional Conditions** - Error boundaries, fail-open
 - [ ] History/scans dashboard
 - [ ] Pro tier features
 - [ ] Email capture

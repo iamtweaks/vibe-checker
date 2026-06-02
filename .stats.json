@@ -1,0 +1,9 @@
+{
+  "totalScans": 2,
+  "uniqueSites": 2,
+  "sites": [
+    "http://scanme.org",
+    "https://cs-roadmap-one.vercel.app"
+  ],
+  "lastUpdated": "2026-06-02T01:36:37.581Z"
+}
