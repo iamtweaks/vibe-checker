@@ -80,12 +80,12 @@ async function fetchRepoTree(
       ref: branch,
     })
     
-    const defaultBranch = (data as any).default_branch || 'main'
+    const targetBranch = branch || (data as any).default_branch || 'main'
     
     const treeResponse = await octokit.rest.git.getTree({
       owner,
       repo,
-      tree_sha: defaultBranch,
+      tree_sha: targetBranch,
       recursive: 'true',
     })
     
@@ -138,8 +138,8 @@ async function checkRepoAccess(
   repo: string
 ): Promise<{ accessible: boolean; isPrivate: boolean; error?: string }> {
   try {
-    const { status } = await octokit.rest.repos.get({ owner, repo })
-    return { accessible: true, isPrivate: status === 200 }
+    const { data } = await octokit.rest.repos.get({ owner, repo })
+    return { accessible: true, isPrivate: Boolean((data as any).private) }
   } catch (error: any) {
     if (error.status === 404) {
       return { accessible: false, isPrivate: false, error: 'Repository not found. Make sure it\'s public.' }

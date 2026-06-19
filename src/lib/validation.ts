@@ -4,6 +4,7 @@
  */
 
 import type { ValidationResult, GitHubParsedURL } from './types'
+import { isBlockedAddress } from './network-security'
 
 // ============== URL Validation ==============
 
@@ -65,7 +66,8 @@ export function validateWebsiteUrl(url: string): ValidationResult {
       }
     }
 
-    // Block localhost and private IPs in production
+    // Fast synchronous checks. The scanner performs DNS resolution and
+    // redirect validation before making any network request.
     const hostname = parsed.hostname.toLowerCase()
     const blockedHosts = [
       'localhost',
@@ -82,11 +84,18 @@ export function validateWebsiteUrl(url: string): ValidationResult {
       }
     }
 
-    // Block private IP ranges (simple check)
-    if (/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/.test(hostname)) {
+    if (hostname.endsWith('.localhost')) {
       return {
         valid: false,
-        error: 'Private IP addresses are not allowed',
+        error: 'Localhost URLs are not allowed',
+        code: 'URL_LOCALHOST_BLOCKED',
+      }
+    }
+
+    if (isBlockedAddress(hostname)) {
+      return {
+        valid: false,
+        error: 'Private, loopback, multicast, or link-local addresses are not allowed',
         code: 'URL_PRIVATE_IP_BLOCKED',
       }
     }

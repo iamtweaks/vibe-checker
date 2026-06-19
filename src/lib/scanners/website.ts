@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import type { WebsiteScanResult, Finding, SeverityCounts, Severity } from '../types'
+import { fetchPublicHtml } from '../network-security'
 
 // ============== Type Definitions ==============
 
@@ -705,42 +706,25 @@ export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
   }
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'VibeChecker/1.0 Security Scanner (+https://vibe-checker.69-6-206-26.sslip.io)',
-        'Accept': 'text/html,application/xhtml+xml',
-      },
-      signal: AbortSignal.timeout(30000),
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-    
+    const { finalUrl, html, headers: responseHeaders } = await fetchPublicHtml(url)
+
     // Extract headers with normalization
-    headers = normalizeHeaders(response.headers)
-    
-    const html = await response.text()
-    
-    // Check HTML size to prevent memory issues
-    if (html.length > 10_000_000) {
-      throw new Error('Website response too large (>10MB). Aborting scan.')
-    }
-    
+    headers = normalizeHeaders(responseHeaders)
+
     const $ = cheerio.load(html)
-    
+
     // Run all checks with error isolation
     for (let i = 0; i < SECURITY_CHECKS.length; i++) {
       const check = SECURITY_CHECKS[i]
-      const isTriggered = safeCheck(() => check.check($, url, headers))
-      
+      const isTriggered = safeCheck(() => check.check($, finalUrl, headers))
+
       if (isTriggered) {
         findings.push(buildFinding(check, findings.length))
       }
     }
   } catch (error: any) {
     if (error.name === 'TimeoutError') {
-      throw new Error(`Website scan timed out after 30 seconds. Try a faster website.`)
+      throw new Error(`Website scan timed out after 15 seconds. Try a faster website.`)
     }
     throw new Error(`Failed to fetch website: ${error.message}`)
   }

@@ -166,14 +166,19 @@ function FadeIn({
 	);
 }
 
+function seededUnit(seed: number): number {
+	const value = Math.sin(seed * 12.9898) * 43758.5453;
+	return value - Math.floor(value);
+}
+
 function FloatingParticles() {
 	const particles = Array.from({ length: 20 }, (_, i) => ({
 		id: i,
-		left: `${Math.random() * 100}%`,
-		size: Math.random() * 4 + 2,
-		delay: Math.random() * 8,
-		duration: Math.random() * 6 + 8,
-		color: Math.random() > 0.5 ? "#34d399" : "#22c55e",
+		left: `${seededUnit(i + 1) * 100}%`,
+		size: seededUnit(i + 21) * 4 + 2,
+		delay: seededUnit(i + 41) * 8,
+		duration: seededUnit(i + 61) * 6 + 8,
+		color: seededUnit(i + 81) > 0.5 ? "#34d399" : "#22c55e",
 	}));
 
 	return (
@@ -199,10 +204,10 @@ function FloatingParticles() {
 function HeroGlints() {
 	const glints = Array.from({ length: 8 }, (_, i) => ({
 		id: i,
-		left: `${15 + Math.random() * 70}%`,
-		top: `${20 + Math.random() * 60}%`,
-		delay: Math.random() * 6,
-		size: Math.random() * 3 + 2,
+		left: `${15 + seededUnit(i + 101) * 70}%`,
+		top: `${20 + seededUnit(i + 121) * 60}%`,
+		delay: seededUnit(i + 141) * 6,
+		size: seededUnit(i + 161) * 3 + 2,
 	}));
 
 	return (
@@ -1248,7 +1253,7 @@ function Testimonials() {
 									))}
 								</div>
 								<p className="text-slate-700 text-sm mb-3 md:mb-4">
-									"{t.quote}"
+									&ldquo;{t.quote}&rdquo;
 								</p>
 								<div>
 									<div className="font-medium text-slate-900 text-sm">
@@ -1277,7 +1282,7 @@ function CTA() {
 						Need Help Fixing the Issues?
 					</h2>
 					<p className="text-lg text-slate-300 mb-4">
-						Every finding includes an "AI Fix Prompt" — copy it and paste into
+						Every finding includes an &ldquo;AI Fix Prompt&rdquo; — copy it and paste into
 						your favorite AI agent for step-by-step fix instructions.
 					</p>
 					<p className="text-md text-emerald-400 mb-8">

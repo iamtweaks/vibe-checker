@@ -11,10 +11,10 @@ const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 // Verify webhook signature using HMAC SHA-256
 function verifySignature(payload: string, signature: string | null): boolean {
 	if (!GITHUB_WEBHOOK_SECRET) {
-		console.warn("GITHUB_WEBHOOK_SECRET not configured, skipping verification");
-		return true;
+		console.error("GITHUB_WEBHOOK_SECRET is not configured; refusing webhook request");
+		return false;
 	}
-	if (!signature) return false;
+	if (!signature || !signature.startsWith("sha256=")) return false;
 
 	const expectedSignature = crypto
 		.createHmac("sha256", GITHUB_WEBHOOK_SECRET)
@@ -24,6 +24,7 @@ function verifySignature(payload: string, signature: string | null): boolean {
 	const trusted = Buffer.from(`sha256=${expectedSignature}`, "utf-8");
 	const received = Buffer.from(signature, "utf-8");
 
+	if (trusted.length !== received.length) return false;
 	return crypto.timingSafeEqual(trusted, received);
 }
 

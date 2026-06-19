@@ -9,15 +9,7 @@ import { validateGitHubUrl, validateWebsiteUrl, checkRateLimit } from '@/lib/val
 import { scanGitHubRepo } from '@/lib/scanners/github'
 import { scanWebsite } from '@/lib/scanners/website'
 import type { ScanAPIResponse, SeverityCounts, ValidationResult } from '@/lib/types'
-
-// In-memory scan store for GET /api/scan/[id]
-// Use globalThis for cross-route access in Next.js
-function getScanStore(): Map<string, ScanAPIResponse> {
-  if (!(globalThis as any).__vibechecker_scan_store) {
-    (globalThis as any).__vibechecker_scan_store = new Map<string, ScanAPIResponse>()
-  }
-  return (globalThis as any).__vibechecker_scan_store
-}
+import { getApiKeyFromHeaders, isAdminApiKey, listRecentScans, persistScan } from '@/lib/scan-store'
 
 // CORS headers for API responses
 const corsHeaders = {
@@ -34,29 +26,19 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders })
 }
 
-// API Key authentication (simple header-based)
-function validateApiKey(request: NextRequest): boolean {
-  const apiKey = request.headers.get('x-api-key')
-  const authHeader = request.headers.get('authorization')
-  
-  // If no key provided, allow (optional auth for public beta)
-  if (!apiKey && !authHeader) {
-    return true
-  }
-  
-  // TODO: Validate against stored API keys in production
-  // For now, accept any non-empty key
-  return true
-}
-
-// GET /api/scan - List recent scans (optional, for debugging)
+// GET /api/scan - List recent scans. Disabled by default to avoid leaking targets.
 export async function GET(request: NextRequest) {
+  const adminKey = getApiKeyFromHeaders(request.headers)
+  if (!isAdminApiKey(adminKey)) {
+    return NextResponse.json(
+      { success: false, error: 'Scan listing requires an admin API key', code: 'ADMIN_KEY_REQUIRED' },
+      { status: 403, headers: corsHeaders }
+    )
+  }
+
   const searchParams = request.nextUrl.searchParams
   const limit = parseInt(searchParams.get('limit') || '10', 10)
-  
-  const scans = Array.from(getScanStore().values())
-    .sort((a, b) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime())
-    .slice(0, Math.min(limit, 100))
+  const scans = await listRecentScans(limit)
   
   return NextResponse.json({
     count: scans.length,
@@ -88,13 +70,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Authenticate
-    if (!validateApiKey(request)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid API key', code: 'INVALID_API_KEY' },
-        { status: 401, headers: corsHeaders }
-      )
-    }
 
     // Parse request body
     let url: string | undefined
@@ -179,8 +154,13 @@ export async function POST(request: NextRequest) {
       scanDuration: result.scanDuration,
     }
 
-    // Store scan result for later retrieval by ID
-    getScanStore().set(scanId, response)
+    // Persist scan result for later retrieval by ID. The scan itself still
+    // succeeds if persistence is temporarily unavailable.
+    try {
+      await persistScan(response)
+    } catch (persistError) {
+      console.error('Failed to persist scan:', persistError)
+    }
 
     return NextResponse.json({
       success: true,

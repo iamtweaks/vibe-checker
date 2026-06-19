@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getScanById } from '@/lib/scan-store'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,13 +13,6 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 }
 
-// Reuse the global scan store from parent route
-function getScanStore(): Map<string, any> {
-  if (!(globalThis as any).__vibechecker_scan_store) {
-    (globalThis as any).__vibechecker_scan_store = new Map()
-  }
-  return (globalThis as any).__vibechecker_scan_store
-}
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders })
@@ -37,16 +31,16 @@ export async function GET(
     )
   }
 
-  // Validate UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if (!uuidRegex.test(id)) {
+  // Validate conservative ID format before querying storage.
+  const idRegex = /^[a-zA-Z0-9_-]{8,64}$/
+  if (!idRegex.test(id)) {
     return NextResponse.json(
       { success: false, error: 'Invalid scan ID format', code: 'INVALID_ID' },
       { status: 400, headers: corsHeaders }
     )
   }
 
-  const scan = getScanStore().get(id)
+  const scan = await getScanById(id)
 
   if (!scan) {
     return NextResponse.json(
