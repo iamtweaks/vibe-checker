@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getApiKeyFromHeaders, isAdminApiKey } from '@/lib/scan-store'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
   'Access-Control-Max-Age': '86400',
 }
 
@@ -14,6 +15,14 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   try {
+    const adminKey = getApiKeyFromHeaders(request.headers)
+    if (!isAdminApiKey(adminKey)) {
+      return NextResponse.json(
+        { error: 'Scan history requires an admin API key', code: 'ADMIN_KEY_REQUIRED' },
+        { status: 403, headers: corsHeaders }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100)
     const offset = parseInt(searchParams.get('offset') || '0', 10)

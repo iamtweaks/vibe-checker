@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { verifyGitHubWebhookSignature } from "@/lib/github-webhook";
 import { scanContent } from "@/lib/scanners/rules";
 import type { Finding } from "@/lib/types";
 
@@ -7,26 +8,6 @@ import type { Finding } from "@/lib/types";
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID;
 const GITHUB_APP_PRIVATE_KEY = process.env.GITHUB_APP_PRIVATE_KEY;
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
-
-// Verify webhook signature using HMAC SHA-256
-function verifySignature(payload: string, signature: string | null): boolean {
-	if (!GITHUB_WEBHOOK_SECRET) {
-		console.error("GITHUB_WEBHOOK_SECRET is not configured; refusing webhook request");
-		return false;
-	}
-	if (!signature || !signature.startsWith("sha256=")) return false;
-
-	const expectedSignature = crypto
-		.createHmac("sha256", GITHUB_WEBHOOK_SECRET)
-		.update(payload)
-		.digest("hex");
-
-	const trusted = Buffer.from(`sha256=${expectedSignature}`, "utf-8");
-	const received = Buffer.from(signature, "utf-8");
-
-	if (trusted.length !== received.length) return false;
-	return crypto.timingSafeEqual(trusted, received);
-}
 
 // Get installation access token using GitHub App credentials
 async function getInstallationAccessToken(
@@ -151,7 +132,7 @@ export async function POST(request: NextRequest) {
 		const event = request.headers.get("x-github-event");
 
 		// Verify signature
-		if (!verifySignature(rawBody, signature)) {
+		if (!verifyGitHubWebhookSignature(rawBody, signature, GITHUB_WEBHOOK_SECRET)) {
 			console.error("Invalid webhook signature");
 			return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
 		}
