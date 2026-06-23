@@ -1,26 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildCorsHeaders } from "@/lib/security-headers";
 import { prisma } from "@/lib/db";
-import { getApiKeyFromHeaders, isAdminApiKey } from "@/lib/scan-store";
-
-type SeverityCounts = {
-	critical?: number;
-	high?: number;
-	medium?: number;
-	low?: number;
-	info?: number;
-};
-
-function countFindings(rawCounts: string): number {
-	try {
-		const counts = JSON.parse(rawCounts) as SeverityCounts;
-		return Object.values(counts).reduce((total, value) => {
-			return total + (typeof value === "number" ? value : 0);
-		}, 0);
-	} catch {
-		return 0;
-	}
-}
+import { getApiKeyFromHeaders, isAdminApiKey, persistScan } from "@/lib/scan-store";
 
 export async function OPTIONS(request: NextRequest) {
 	return NextResponse.json({}, { headers: buildCorsHeaders(request, "GET, OPTIONS") });
@@ -28,11 +9,11 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
 	try {
-		const [totalScans, uniqueTargets, scansForFindingCount, recentScans] =
+		const [totalScans, uniqueTargets, vulnerabilitiesFound, recentScans] =
 			await Promise.all([
 				prisma.scan.count(),
-				prisma.scan.groupBy({ by: ["targetUrl"] }),
-				prisma.scan.findMany({ select: { severityCounts: true } }),
+				prisma.target.count(),
+				prisma.scanFinding.count(),
 				prisma.scan.findMany({
 					orderBy: { createdAt: "desc" },
 					take: 10,
@@ -46,15 +27,10 @@ export async function GET(request: NextRequest) {
 				}),
 			]);
 
-		const vulnerabilitiesFound = scansForFindingCount.reduce(
-			(total, scan) => total + countFindings(scan.severityCounts),
-			0,
-		);
-
 		return NextResponse.json(
 			{
 				totalScans,
-				uniqueSites: uniqueTargets.length,
+				uniqueSites: uniqueTargets,
 				vulnerabilitiesFound,
 				recentScans: recentScans.map((scan) => ({
 					...scan,
@@ -97,17 +73,26 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		const scan = await prisma.scan.create({
-			data: {
-				targetUrl: url.trim().toLowerCase().replace(/\/$/, ""),
-				scanType: scanType === "github" ? "github" : "website",
-				findingsJson: JSON.stringify(Array.isArray(findings) ? findings : []),
-				severityCounts: JSON.stringify(severityCounts || {}),
+		const type = scanType === "github" ? "github" : "website";
+		const scanId = crypto.randomUUID();
+		await persistScan({
+			scanId,
+			type,
+			targetUrl: url.trim(),
+			status: "completed",
+			findings: Array.isArray(findings) ? findings : [],
+			severityCounts: severityCounts || {
+				critical: 0,
+				high: 0,
+				medium: 0,
+				low: 0,
+				info: 0,
 			},
+			scannedAt: new Date().toISOString(),
 		});
 
 		return NextResponse.json(
-			{ scanId: scan.id },
+			{ scanId },
 			{ headers: buildCorsHeaders(request) },
 		);
 	} catch (error) {

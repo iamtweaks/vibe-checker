@@ -18,7 +18,7 @@
     "@prisma/adapter-libsql": "6.19.3",
     "@prisma/client": "6.19.3",
     "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.106.2",
+    "@supabase/supabase-js": "^2.108.2",
     "better-sqlite3": "^12.10.0",
     "cheerio": "^1.0.0-rc.12",
     "class-variance-authority": "^0.7.0",
