@@ -5,25 +5,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { buildCorsHeaders } from '@/lib/security-headers'
 import { validateGitHubUrl, validateWebsiteUrl, checkRateLimit } from '@/lib/validation'
 import { scanGitHubRepo } from '@/lib/scanners/github'
 import { scanWebsite } from '@/lib/scanners/website'
 import type { ScanAPIResponse, SeverityCounts, ValidationResult } from '@/lib/types'
 import { getApiKeyFromHeaders, isAdminApiKey, listRecentScans, persistScan } from '@/lib/scan-store'
 
-// CORS headers for API responses
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
-  'Access-Control-Max-Age': '86400',
-}
 
 // Valid scan types
 const VALID_TYPES = ['github', 'website'] as const
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: buildCorsHeaders(request) })
 }
 
 // GET /api/scan - List recent scans. Disabled by default to avoid leaking targets.
@@ -32,7 +26,7 @@ export async function GET(request: NextRequest) {
   if (!isAdminApiKey(adminKey)) {
     return NextResponse.json(
       { success: false, error: 'Scan listing requires an admin API key', code: 'ADMIN_KEY_REQUIRED' },
-      { status: 403, headers: corsHeaders }
+      { status: 403, headers: buildCorsHeaders(request) }
     )
   }
 
@@ -43,7 +37,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     count: scans.length,
     scans,
-  }, { headers: corsHeaders })
+  }, { headers: buildCorsHeaders(request) })
 }
 
 // POST /api/scan - Unified scan endpoint
@@ -65,7 +59,7 @@ export async function POST(request: NextRequest) {
         },
         {
           status: 429,
-          headers: { ...corsHeaders, 'Retry-After': String(Math.ceil((rateLimitResult.retryAfter || 1000) / 1000)) },
+          headers: { ...buildCorsHeaders(request), 'Retry-After': String(Math.ceil((rateLimitResult.retryAfter || 1000) / 1000)) },
         }
       )
     }
@@ -84,7 +78,7 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json(
         { success: false, error: 'Invalid JSON in request body', code: 'INVALID_JSON' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: buildCorsHeaders(request) }
       )
     }
 
@@ -92,14 +86,14 @@ export async function POST(request: NextRequest) {
     if (!url || typeof url !== 'string') {
       return NextResponse.json(
         { success: false, error: 'URL is required', code: 'URL_REQUIRED' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: buildCorsHeaders(request) }
       )
     }
 
     if (!type || typeof type !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Type is required (github or website)', code: 'TYPE_REQUIRED' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: buildCorsHeaders(request) }
       )
     }
 
@@ -107,7 +101,7 @@ export async function POST(request: NextRequest) {
     if (!VALID_TYPES.includes(type as typeof VALID_TYPES[number])) {
       return NextResponse.json(
         { success: false, error: 'Invalid type. Must be "github" or "website"', code: 'INVALID_TYPE' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: buildCorsHeaders(request) }
       )
     }
 
@@ -124,7 +118,7 @@ export async function POST(request: NextRequest) {
     if (!validation.valid) {
       return NextResponse.json(
         { success: false, error: validation.error, code: validation.code },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: buildCorsHeaders(request) }
       )
     }
 
@@ -167,7 +161,7 @@ export async function POST(request: NextRequest) {
       ...response,
     }, {
       headers: {
-        ...corsHeaders,
+        ...buildCorsHeaders(request),
         'X-RateLimit-Remaining': String(rateLimitResult.remainingRequests ?? 0),
       },
     })
@@ -179,27 +173,27 @@ export async function POST(request: NextRequest) {
     if (error.message?.includes('Invalid GitHub URL')) {
       return NextResponse.json(
         { success: false, error: 'Invalid GitHub repository URL', code: 'INVALID_URL' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: buildCorsHeaders(request) }
       )
     }
 
     if (error.message?.includes('not found') || error.message?.includes('404')) {
       return NextResponse.json(
         { success: false, error: 'Repository not found or is not public', code: 'REPO_NOT_FOUND' },
-        { status: 404, headers: corsHeaders }
+        { status: 404, headers: buildCorsHeaders(request) }
       )
     }
 
     if (error.message?.includes('rate limit') || error.status === 403) {
       return NextResponse.json(
         { success: false, error: 'GitHub API rate limit exceeded. Try again later or provide a token.', code: 'GITHUB_RATE_LIMIT' },
-        { status: 429, headers: corsHeaders }
+        { status: 429, headers: buildCorsHeaders(request) }
       )
     }
 
     return NextResponse.json(
       { success: false, error: error.message || 'Scan failed. Please try again.', code: 'SCAN_FAILED' },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: buildCorsHeaders(request) }
     )
   }
 }

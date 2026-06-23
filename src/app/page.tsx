@@ -329,9 +329,7 @@ function Stats() {
 				setStatsData({
 					uniqueSites: data.uniqueSites || 0,
 					totalScans: data.totalScans || 0,
-					vulnerabilitiesFound: Math.floor(
-						(data.uniqueSites || 0) * 0.65 * 4.9,
-					),
+					vulnerabilitiesFound: data.vulnerabilitiesFound || 0,
 				});
 				setLoaded(true);
 			})
@@ -566,12 +564,10 @@ Do not explain what you would do — provide actual working code.`;
 		}, 100);
 
 		try {
-			const endpoint =
-				scanType === "github" ? "/api/scan/github" : "/api/scan/website";
-			const res = await fetch(endpoint, {
+			const res = await fetch("/api/scan", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ url: url.trim() }),
+				body: JSON.stringify({ url: url.trim(), type: scanType }),
 			});
 
 			// Wait until exactly 5 seconds have passed
@@ -609,18 +605,6 @@ Do not explain what you would do — provide actual working code.`;
 			const data = await res.json();
 			setResult(data);
 			setTimeout(() => setShowResult(true), 300);
-			// Save scan to database
-			fetch("/api/stats", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					url: url.trim(),
-					scanType: scanType,
-					findings: data.findings || [],
-					severityCounts: data.severityCounts || {},
-					scanDuration: data.scanDuration || 0,
-				}),
-			}).catch(() => {});
 		} catch (err) {
 			clearInterval(progressInterval);
 			setScanProgress(0);

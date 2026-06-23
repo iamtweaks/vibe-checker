@@ -4,18 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { buildCorsHeaders } from '@/lib/security-headers'
 import { getScanById } from '@/lib/scan-store'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
-  'Access-Control-Max-Age': '86400',
-}
 
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: buildCorsHeaders(request) })
 }
 
 export async function GET(
@@ -27,7 +22,7 @@ export async function GET(
   if (!id || typeof id !== 'string') {
     return NextResponse.json(
       { success: false, error: 'Scan ID is required', code: 'ID_REQUIRED' },
-      { status: 400, headers: corsHeaders }
+      { status: 400, headers: buildCorsHeaders(request) }
     )
   }
 
@@ -36,7 +31,7 @@ export async function GET(
   if (!idRegex.test(id)) {
     return NextResponse.json(
       { success: false, error: 'Invalid scan ID format', code: 'INVALID_ID' },
-      { status: 400, headers: corsHeaders }
+      { status: 400, headers: buildCorsHeaders(request) }
     )
   }
 
@@ -45,12 +40,12 @@ export async function GET(
   if (!scan) {
     return NextResponse.json(
       { success: false, error: 'Scan not found', code: 'SCAN_NOT_FOUND' },
-      { status: 404, headers: corsHeaders }
+      { status: 404, headers: buildCorsHeaders(request) }
     )
   }
 
   return NextResponse.json({
     success: true,
     ...scan,
-  }, { headers: corsHeaders })
+  }, { headers: buildCorsHeaders(request) })
 }

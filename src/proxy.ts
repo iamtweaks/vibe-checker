@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { applySecurityHeaders } from "@/lib/security-headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -33,7 +34,7 @@ export async function proxy(request: NextRequest) {
 		await supabase.auth.getUser();
 	}
 
-	return supabaseResponse;
+	return applySecurityHeaders(supabaseResponse);
 }
 
 export const config = {

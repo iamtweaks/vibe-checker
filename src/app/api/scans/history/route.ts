@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildCorsHeaders } from '@/lib/security-headers'
 import { prisma } from '@/lib/db'
 import { getApiKeyFromHeaders, isAdminApiKey } from '@/lib/scan-store'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
-  'Access-Control-Max-Age': '86400',
-}
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: buildCorsHeaders(request) })
 }
 
 export async function GET(request: NextRequest) {
@@ -19,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!isAdminApiKey(adminKey)) {
       return NextResponse.json(
         { error: 'Scan history requires an admin API key', code: 'ADMIN_KEY_REQUIRED' },
-        { status: 403, headers: corsHeaders }
+        { status: 403, headers: buildCorsHeaders(request) }
       )
     }
 
@@ -64,13 +59,13 @@ export async function GET(request: NextRequest) {
           hasMore: offset + scans.length < total,
         },
       },
-      { headers: corsHeaders }
+      { headers: buildCorsHeaders(request) }
     )
   } catch (error: any) {
     console.error('History fetch error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch scan history', code: 'FETCH_FAILED' },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: buildCorsHeaders(request) }
     )
   }
 }

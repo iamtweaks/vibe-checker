@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { buildCorsHeaders, isProduction } from "@/lib/security-headers";
 import crypto from "crypto";
 import { verifyGitHubWebhookSignature } from "@/lib/github-webhook";
 import { scanContent } from "@/lib/scanners/rules";
@@ -299,11 +300,21 @@ Found **${allFindings.length}** issue(s) in PR #${pullNumber}:\n`;
 	}
 }
 
-// Health check
-export async function GET() {
-	return NextResponse.json({
-		status: "ok",
-		service: "VibeChecker GitHub Webhook",
-		version: "1.0.0",
-	});
+// Internal health check. Public production access is disabled to avoid exposing
+// debug/service metadata from the webhook route.
+export async function GET(request: NextRequest) {
+	if (isProduction()) {
+		return NextResponse.json(
+			{ error: "Not found" },
+			{ status: 404, headers: buildCorsHeaders(request, "GET, OPTIONS") },
+		);
+	}
+
+	return NextResponse.json(
+		{
+			status: "ok",
+			service: "VibeChecker GitHub Webhook",
+		},
+		{ headers: buildCorsHeaders(request, "GET, OPTIONS") },
+	);
 }

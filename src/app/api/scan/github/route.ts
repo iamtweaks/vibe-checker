@@ -1,23 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
-import {
-	validateGitHubUrl,
-	parseGitHubUrl,
-	checkRateLimit,
-} from "@/lib/validation";
+import { buildCorsHeaders } from "@/lib/security-headers";
+import { validateGitHubUrl, checkRateLimit } from "@/lib/validation";
 import { scanGitHubRepo } from "@/lib/scanners/github";
 import { createClient } from "@/utils/supabase/server";
 import type { ScanAPIResponse, SeverityCounts } from "@/lib/types";
 
-// CORS headers for API responses
-const corsHeaders = {
-	"Access-Control-Allow-Origin": "*",
-	"Access-Control-Allow-Methods": "POST, OPTIONS",
-	"Access-Control-Allow-Headers": "Content-Type, Authorization",
-	"Access-Control-Max-Age": "86400",
-};
-
-export async function OPTIONS() {
-	return NextResponse.json({}, { headers: corsHeaders });
+export async function OPTIONS(request: NextRequest) {
+	return NextResponse.json({}, { headers: buildCorsHeaders(request) });
 }
 
 export async function POST(request: NextRequest) {
@@ -39,7 +28,7 @@ export async function POST(request: NextRequest) {
 				{
 					status: 429,
 					headers: {
-						...corsHeaders,
+						...buildCorsHeaders(request),
 						"Retry-After": String(
 							Math.ceil((rateLimitResult.retryAfter || 1000) / 1000),
 						),
@@ -57,7 +46,7 @@ export async function POST(request: NextRequest) {
 		} catch {
 			return NextResponse.json(
 				{ error: "Invalid JSON in request body", code: "INVALID_JSON" },
-				{ status: 400, headers: corsHeaders },
+				{ status: 400, headers: buildCorsHeaders(request) },
 			);
 		}
 
@@ -65,7 +54,7 @@ export async function POST(request: NextRequest) {
 		if (!url || typeof url !== "string") {
 			return NextResponse.json(
 				{ error: "URL is required", code: "URL_REQUIRED" },
-				{ status: 400, headers: corsHeaders },
+				{ status: 400, headers: buildCorsHeaders(request) },
 			);
 		}
 
@@ -73,7 +62,7 @@ export async function POST(request: NextRequest) {
 		if (!validation.valid) {
 			return NextResponse.json(
 				{ error: validation.error, code: validation.code },
-				{ status: 400, headers: corsHeaders },
+				{ status: 400, headers: buildCorsHeaders(request) },
 			);
 		}
 
@@ -136,7 +125,7 @@ export async function POST(request: NextRequest) {
 
 		return NextResponse.json(response, {
 			headers: {
-				...corsHeaders,
+				...buildCorsHeaders(request),
 				"X-RateLimit-Remaining": String(rateLimitResult.remainingRequests ?? 0),
 			},
 		});
@@ -147,7 +136,7 @@ export async function POST(request: NextRequest) {
 		if (error.message?.includes("Invalid GitHub URL")) {
 			return NextResponse.json(
 				{ error: "Invalid GitHub repository URL", code: "INVALID_URL" },
-				{ status: 400, headers: corsHeaders },
+				{ status: 400, headers: buildCorsHeaders(request) },
 			);
 		}
 
@@ -160,7 +149,7 @@ export async function POST(request: NextRequest) {
 					error: "Repository not found or is not public",
 					code: "REPO_NOT_FOUND",
 				},
-				{ status: 404, headers: corsHeaders },
+				{ status: 404, headers: buildCorsHeaders(request) },
 			);
 		}
 
@@ -171,7 +160,7 @@ export async function POST(request: NextRequest) {
 						"Could not access repository. Make sure it exists and is public.",
 					code: "ACCESS_DENIED",
 				},
-				{ status: 403, headers: corsHeaders },
+				{ status: 403, headers: buildCorsHeaders(request) },
 			);
 		}
 
@@ -182,7 +171,7 @@ export async function POST(request: NextRequest) {
 						"GitHub API rate limit exceeded. Try again later or provide a GitHub token.",
 					code: "GITHUB_RATE_LIMIT",
 				},
-				{ status: 429, headers: corsHeaders },
+				{ status: 429, headers: buildCorsHeaders(request) },
 			);
 		}
 
@@ -191,7 +180,7 @@ export async function POST(request: NextRequest) {
 				error: error.message || "Scan failed. Please try again.",
 				code: "SCAN_FAILED",
 			},
-			{ status: 500, headers: corsHeaders },
+			{ status: 500, headers: buildCorsHeaders(request) },
 		);
 	}
 }
