@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
 	Shield,
 	Zap,
@@ -42,34 +42,34 @@ const SEVERITY_STYLES: Record<
 	{ bg: string; text: string; border: string; dot: string }
 > = {
 	critical: {
-		bg: "bg-red-50",
-		text: "text-red-600",
-		border: "border-red-200",
-		dot: "bg-red-500",
+		bg: "bg-kanagawa-red/10",
+		text: "text-kanagawa-red",
+		border: "border-kanagawa-red/30",
+		dot: "bg-kanagawa-red",
 	},
 	high: {
-		bg: "bg-orange-50",
-		text: "text-orange-600",
-		border: "border-orange-200",
-		dot: "bg-orange-500",
+		bg: "bg-kanagawa-peach/10",
+		text: "text-kanagawa-peach",
+		border: "border-kanagawa-peach/30",
+		dot: "bg-kanagawa-peach",
 	},
 	medium: {
-		bg: "bg-yellow-50",
-		text: "text-yellow-600",
-		border: "border-yellow-200",
-		dot: "bg-yellow-500",
+		bg: "bg-kanagawa-yellow/10",
+		text: "text-kanagawa-yellow",
+		border: "border-kanagawa-yellow/30",
+		dot: "bg-kanagawa-yellow",
 	},
 	low: {
-		bg: "bg-blue-50",
-		text: "text-blue-600",
-		border: "border-blue-200",
-		dot: "bg-blue-500",
+		bg: "bg-kanagawa-teal/10",
+		text: "text-kanagawa-teal",
+		border: "border-kanagawa-teal/30",
+		dot: "bg-kanagawa-teal",
 	},
 	info: {
-		bg: "bg-slate-50",
-		text: "text-slate-600",
-		border: "border-slate-200",
-		dot: "bg-slate-400",
+		bg: "bg-kanagawa-surface",
+		text: "text-kanagawa-fgDim",
+		border: "border-kanagawa-border",
+		dot: "bg-kanagawa-fgDim",
 	},
 };
 
@@ -231,13 +231,13 @@ function HeroGlints() {
 
 function Header() {
 	return (
-		<header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/50">
+		<header className="fixed top-0 left-0 right-0 z-50 bg-kanagawa-bg/80 backdrop-blur-lg border-b border-kanagawa-border/50">
 			<div className="max-w-5xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
 				<a href="#" className="flex items-center gap-2">
-					<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-						<Shield className="w-5 h-5 text-white" />
+					<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-kanagawa-accent to-kanagawa-violet flex items-center justify-center">
+						<Shield className="w-5 h-5 text-kanagawa-bg" />
 					</div>
-					<span className="font-semibold text-base md:text-lg tracking-tight">
+					<span className="font-semibold text-base md:text-lg tracking-tight text-kanagawa-fg">
 						VibeChecker
 					</span>
 				</a>
@@ -246,7 +246,7 @@ function Header() {
 						href="https://github.com/iamtweaks/vibe-checker"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="text-slate-600 hover:text-slate-900 transition-colors"
+						className="text-kanagawa-fgMuted hover:text-kanagawa-fg transition-colors"
 					>
 						<Github className="w-5 h-5" />
 					</a>
@@ -258,31 +258,31 @@ function Header() {
 
 function Hero() {
 	return (
-		<section className="pt-28 pb-16 text-center bg-gradient-to-b from-white via-slate-50 to-white overflow-hidden">
+		<section className="pt-28 pb-16 text-center bg-gradient-to-b from-kanagawa-bg via-kanagawa-surface to-kanagawa-bg overflow-hidden">
 			<div className="absolute inset-0 overflow-hidden pointer-events-none">
-				<div className="absolute top-20 left-1/4 w-72 h-72 bg-emerald-200 rounded-full blur-3xl opacity-20" />
-				<div className="absolute top-40 right-1/4 w-96 h-96 bg-blue-200 rounded-full blur-3xl opacity-20" />
+				<div className="absolute top-20 left-1/4 w-72 h-72 bg-kanagawa-accent rounded-full blur-3xl opacity-20" />
+				<div className="absolute top-40 right-1/4 w-96 h-96 bg-kanagawa-violet rounded-full blur-3xl opacity-15" />
 				<FloatingParticles />
 				<HeroGlints />
 			</div>
 			<div className="relative max-w-3xl mx-auto px-6">
 				<FadeIn>
-					<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 mb-8 shimmer">
+					<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-kanagawa-surface border border-kanagawa-accent/30 text-sm text-kanagawa-accent mb-8 shimmer">
 						<Sparkles className="w-4 h-4" />
 						<span>Free • No Signup • Results in Seconds</span>
 					</div>
 				</FadeIn>
 				<FadeIn delay={100}>
-					<h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-slate-900 mb-6">
+					<h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-kanagawa-fg mb-6">
 						The Security Scanner
 						<br />
-						<span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+						<span className="bg-gradient-to-r from-kanagawa-accent to-kanagawa-teal bg-clip-text text-transparent">
 							Built for Vibe-Coded Apps
 						</span>
 					</h1>
 				</FadeIn>
 				<FadeIn delay={200}>
-					<p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+					<p className="text-lg text-kanagawa-fgMuted mb-8 max-w-2xl mx-auto leading-relaxed">
 						If you built your app with{" "}
 						<strong>Lovable, Bolt, Cursor, Replit,</strong> or{" "}
 						<strong>Google AI Studio</strong>, VibeCheck finds the security
@@ -293,7 +293,7 @@ function Hero() {
 					<div className="flex flex-col sm:flex-row items-center justify-center gap-4">
 						<a
 							href="#scanner"
-							className="group btn-glow inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-all hover:gap-3 border-glow"
+							className="group btn-glow inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-kanagawa-accent text-kanagawa-bg font-medium hover:bg-kanagawa-accentSoft transition-all hover:gap-3 border-glow"
 						>
 							Scan Your App Free
 							<ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -302,7 +302,7 @@ function Hero() {
 							href="https://github.com/iamtweaks/vibe-checker"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 hover:border-emerald-300 transition-all hover:shadow-md"
+							className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-kanagawa-border text-kanagawa-fgMuted font-medium hover:bg-kanagawa-surface hover:border-kanagawa-accent/40 transition-all hover:shadow-md"
 						>
 							<Github className="w-4 h-4" />
 							View on GitHub
@@ -314,28 +314,20 @@ function Hero() {
 	);
 }
 
-function Stats() {
-	const [statsData, setStatsData] = useState({
-		uniqueSites: 0,
-		totalScans: 0,
-		vulnerabilitiesFound: 0,
-	});
-	const [loaded, setLoaded] = useState(false);
+interface StatsData {
+	uniqueSites: number;
+	totalScans: number;
+	uniqueVulnerabilities: number;
+	totalVulnerabilities: number;
+}
 
-	useEffect(() => {
-		fetch("/api/stats")
-			.then((r) => r.json())
-			.then((data) => {
-				setStatsData({
-					uniqueSites: data.uniqueSites || 0,
-					totalScans: data.totalScans || 0,
-					vulnerabilitiesFound: data.vulnerabilitiesFound || 0,
-				});
-				setLoaded(true);
-			})
-			.catch(() => setLoaded(true));
-	}, []);
-
+function Stats({
+	statsData,
+	loaded,
+}: {
+	statsData: StatsData;
+	loaded: boolean;
+}) {
 	const stats = [
 		{
 			value: loaded ? statsData.uniqueSites : 0,
@@ -343,7 +335,7 @@ function Stats() {
 			suffix: "",
 		},
 		{
-			value: loaded ? statsData.vulnerabilitiesFound : 0,
+			value: loaded ? statsData.uniqueVulnerabilities : 0,
 			label: "Vulnerabilities Found",
 			suffix: "+",
 		},
@@ -352,17 +344,17 @@ function Stats() {
 	];
 
 	return (
-		<section id="stats" className="py-16 bg-slate-900">
+		<section id="stats" className="py-16 bg-kanagawa-surface">
 			<div className="max-w-5xl mx-auto px-4 md:px-6">
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
 					{stats.map((stat, i) => (
 						<FadeIn key={i} delay={i * 100}>
-							<div className="text-center stat-card p-3 md:p-4 rounded-xl">
-								<div className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1">
+							<div className="text-center stat-card p-3 md:p-4 rounded-xl bg-kanagawa-bg/40">
+								<div className="text-2xl md:text-3xl lg:text-4xl font-bold text-kanagawa-fg mb-1">
 									<AnimatedCounter end={stat.value} />
-									<span className="text-emerald-400">{stat.suffix}</span>
+									<span className="text-kanagawa-accent">{stat.suffix}</span>
 								</div>
-								<div className="text-xs md:text-sm text-slate-400">
+								<div className="text-xs md:text-sm text-kanagawa-fgDim">
 									{stat.label}
 								</div>
 							</div>
@@ -376,18 +368,18 @@ function Stats() {
 
 function RealityCheck() {
 	return (
-		<section className="py-12 md:py-20 bg-gradient-to-b from-white to-slate-50">
+		<section className="py-12 md:py-20 bg-gradient-to-b from-kanagawa-bg to-kanagawa-surface">
 			<div className="max-w-5xl mx-auto px-4 md:px-6">
 				<FadeIn>
 					<div className="text-center mb-8 md:mb-12">
-						<div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-xs md:text-sm text-red-700 mb-3 md:mb-4">
+						<div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-kanagawa-red/10 border border-kanagawa-red/30 text-xs md:text-sm text-kanagawa-red mb-3 md:mb-4">
 							<AlertTriangle className="w-4 h-4" />
 							<span>The Data Is Alarming</span>
 						</div>
-						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">
+						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-kanagawa-fg mb-3">
 							What the Research Says
 						</h2>
-						<p className="text-slate-600 max-w-2xl mx-auto text-xs md:text-sm">
+						<p className="text-kanagawa-fgMuted max-w-2xl mx-auto text-xs md:text-sm">
 							Escape.tech scanned 5,600 vibe-coded apps and found over 2,000
 							vulnerabilities and 400 exposed secrets. Tenzai tested 15 apps
 							built with 5 AI coding tools and found 69 vulnerabilities
@@ -422,36 +414,36 @@ function RealityCheck() {
 						].map((item, i) => (
 							<div
 								key={i}
-								className="bg-white rounded-xl border border-slate-200 p-3 md:p-5 text-center card-hover"
+								className="bg-kanagawa-surface rounded-xl border border-kanagawa-border p-3 md:p-5 text-center card-hover"
 							>
-								<div className="text-2xl md:text-3xl font-bold text-red-600 mb-1">
+								<div className="text-2xl md:text-3xl font-bold text-kanagawa-red mb-1">
 									{item.stat}
 								</div>
-								<div className="text-xs text-slate-600 mb-1 md:mb-2">
+								<div className="text-xs text-kanagawa-fgMuted mb-1 md:mb-2">
 									{item.label}
 								</div>
-								<div className="text-xs text-slate-400">{item.source}</div>
+								<div className="text-xs text-kanagawa-fgDim">{item.source}</div>
 							</div>
 						))}
 					</div>
 				</FadeIn>
 
 				<FadeIn delay={200}>
-					<div className="bg-slate-900 rounded-2xl p-4 md:p-8">
+					<div className="bg-kanagawa-surface rounded-2xl p-4 md:p-8 border border-kanagawa-border">
 						<div className="text-center mb-6 md:mb-8">
-							<h3 className="text-lg md:text-xl font-semibold text-white mb-2">
+							<h3 className="text-lg md:text-xl font-semibold text-kanagawa-fg mb-2">
 								Why Vibe-Coded Apps Are at Risk
 							</h3>
-							<p className="text-xs md:text-sm text-slate-400">
+							<p className="text-xs md:text-sm text-kanagawa-fgDim">
 								AI models optimize for working code, not secure code.
 							</p>
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 text-left">
 							<div>
-								<div className="text-emerald-400 font-semibold text-xs md:text-sm mb-2">
+								<div className="text-kanagawa-accent font-semibold text-xs md:text-sm mb-2">
 									🚀 Speed Creates Blind Spots
 								</div>
-								<p className="text-slate-300 text-xs">
+								<p className="text-kanagawa-fgMuted text-xs">
 									AI coding tools build full-stack apps in minutes. They skip
 									authentication checks, expose database credentials,
 									misconfigure Supabase RLS policies, and leave API routes wide
@@ -459,20 +451,20 @@ function RealityCheck() {
 								</p>
 							</div>
 							<div>
-								<div className="text-emerald-400 font-semibold text-xs md:text-sm mb-2">
+								<div className="text-kanagawa-accent font-semibold text-xs md:text-sm mb-2">
 									🔓 The Attack Surface Is Growing
 								</div>
-								<p className="text-slate-300 text-xs">
+								<p className="text-kanagawa-fgMuted text-xs">
 									With Google AI Studio offering full-stack vibe coding with
 									Firebase integration, and Lovable creating 200,000 new
 									projects daily, attackers know where to look.
 								</p>
 							</div>
 							<div>
-								<div className="text-emerald-400 font-semibold text-xs md:text-sm mb-2">
+								<div className="text-kanagawa-accent font-semibold text-xs md:text-sm mb-2">
 									✅ VibeCheck Catches These Issues
 								</div>
-								<p className="text-slate-300 text-xs">
+								<p className="text-kanagawa-fgMuted text-xs">
 									Free, no signup required, gives you a security grade in
 									seconds. Catches issues before your users do.
 								</p>
@@ -485,7 +477,11 @@ function RealityCheck() {
 	);
 }
 
-function Scanner() {
+function Scanner({
+	onScanComplete,
+}: {
+	onScanComplete?: () => Promise<void> | void;
+}) {
 	const [scanType, setScanType] = useState<ScanType>("github");
 	const [url, setUrl] = useState("");
 	const [isScanning, setIsScanning] = useState(false);
@@ -605,6 +601,15 @@ Do not explain what you would do — provide actual working code.`;
 			const data = await res.json();
 			setResult(data);
 			setTimeout(() => setShowResult(true), 300);
+			// The /api/scan/{type} route is the canonical writer; it persists
+			// the scan + each finding into Supabase. We just need to refresh
+			// the displayed counters so the user sees the new unique apps /
+			// unique vulnerabilities. We don't block the UI on the refetch.
+			if (onScanComplete) {
+				Promise.resolve(onScanComplete()).catch(() => {
+					// Non-critical: stats will refresh on the next interaction.
+				});
+			}
 		} catch (err) {
 			clearInterval(progressInterval);
 			setScanProgress(0);
@@ -630,20 +635,20 @@ Do not explain what you would do — provide actual working code.`;
 		: 0;
 
 	return (
-		<section id="scanner" className="py-12 md:py-20 bg-slate-50">
+		<section id="scanner" className="py-12 md:py-20 bg-kanagawa-surface">
 			<div className="max-w-3xl mx-auto px-4 md:px-6">
 				<FadeIn>
 					<div className="text-center mb-8 md:mb-10">
-						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">
+						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-kanagawa-fg mb-3">
 							Scan Your App
 						</h2>
-						<p className="text-slate-600 text-sm md:text-base">
+						<p className="text-kanagawa-fgMuted text-sm md:text-base">
 							Enter a GitHub repo or website URL to start scanning
 						</p>
 					</div>
 				</FadeIn>
 				<FadeIn delay={100}>
-					<div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 p-4 md:p-8">
+					<div className="bg-kanagawa-bg rounded-2xl shadow-xl border border-kanagawa-border p-4 md:p-8">
 						<div className="flex gap-2 mb-6 md:mb-8">
 							<button
 								onClick={() => {
@@ -651,7 +656,7 @@ Do not explain what you would do — provide actual working code.`;
 									setResult(null);
 									setError(null);
 								}}
-								className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${scanType === "github" ? "bg-slate-900 text-white shadow-lg" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+								className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${scanType === "github" ? "bg-kanagawa-accent text-kanagawa-bg shadow-lg" : "bg-kanagawa-surface text-kanagawa-fgMuted hover:bg-kanagawa-surface2"}`}
 							>
 								<Github className="w-4 h-4" />
 								GitHub
@@ -662,7 +667,7 @@ Do not explain what you would do — provide actual working code.`;
 									setResult(null);
 									setError(null);
 								}}
-								className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${scanType === "website" ? "bg-slate-900 text-white shadow-lg" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+								className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${scanType === "website" ? "bg-kanagawa-accent text-kanagawa-bg shadow-lg" : "bg-kanagawa-surface text-kanagawa-fgMuted hover:bg-kanagawa-surface2"}`}
 							>
 								<Globe className="w-4 h-4" />
 								Website
@@ -670,7 +675,7 @@ Do not explain what you would do — provide actual working code.`;
 						</div>
 						<div className="flex flex-col sm:flex-row gap-3 mb-6">
 							<div className="flex-1 relative">
-								<Terminal className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-slate-400" />
+								<Terminal className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-kanagawa-fgDim" />
 								<input
 									type="text"
 									value={url}
@@ -678,18 +683,18 @@ Do not explain what you would do — provide actual working code.`;
 									placeholder={
 										scanType === "github" ? "owner/repo" : "https://example.com"
 									}
-									className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 md:pl-12 pr-3 md:pr-4 py-3 md:py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+									className="w-full bg-kanagawa-surface border border-kanagawa-border rounded-xl pl-10 md:pl-12 pr-3 md:pr-4 py-3 md:py-4 text-sm text-kanagawa-fg placeholder:text-kanagawa-fgDim focus:outline-none focus:ring-2 focus:ring-kanagawa-accent focus:border-transparent transition"
 									onKeyDown={(e) => e.key === "Enter" && handleScan()}
 								/>
 							</div>
 							<button
 								onClick={handleScan}
 								disabled={isScanning || !url.trim()}
-								className={`btn-scan px-6 md:px-8 py-3 md:py-4 rounded-xl text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isScanning ? "scan-pulse" : ""}`}
+								className={`btn-scan px-6 md:px-8 py-3 md:py-4 rounded-xl text-kanagawa-bg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isScanning ? "scan-pulse" : ""}`}
 							>
 								{isScanning ? (
 									<>
-										<div className="spinner-emerald w-4 h-4" />
+										<div className="spinner-kanagawa w-4 h-4" />
 										<span className="scanning-dots">Scanning</span>
 									</>
 								) : (
@@ -701,42 +706,42 @@ Do not explain what you would do — provide actual working code.`;
 							</button>
 						</div>
 						{error && (
-							<div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center gap-3 mb-6 animate-in slide-in-from-top-2">
+							<div className="p-4 rounded-xl bg-kanagawa-red/10 border border-kanagawa-red/30 text-kanagawa-red flex items-center gap-3 mb-6 animate-in slide-in-from-top-2">
 								<AlertTriangle className="w-5 h-5 flex-shrink-0" />
 								<span className="text-sm">{error}</span>
 							</div>
 						)}
 						{isScanning && (
 							<div className="space-y-4">
-								<div className="flex items-center justify-between text-sm text-slate-500">
+								<div className="flex items-center justify-between text-sm text-kanagawa-fgMuted">
 									<span className="flex items-center gap-2">
-										<div className="spinner-emerald w-4 h-4 border-emerald-500/30 border-t-emerald-500" />
+										<div className="spinner-kanagawa w-4 h-4" />
 										Scanning in progress...
 									</span>
 									<span>{Math.round(scanProgress)}%</span>
 								</div>
-								<div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+								<div className="h-2 bg-kanagawa-surface rounded-full overflow-hidden">
 									<div
 										className="h-full progress-gradient rounded-full transition-all duration-500 ease-out"
 										style={{ width: `${scanProgress}%` }}
 									/>
 								</div>
-								<div className="space-y-2 text-sm text-slate-500">
+								<div className="space-y-2 text-sm text-kanagawa-fgMuted">
 									<p className="flex items-center gap-2">
-										<span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot" />
+										<span className="w-1.5 h-1.5 rounded-full bg-kanagawa-accent pulse-dot" />
 										Fetching {scanType === "github" ? "repository" : "website"}
 										...
 									</p>
 									<p className="flex items-center gap-2">
 										<span
-											className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot"
+											className="w-1.5 h-1.5 rounded-full bg-kanagawa-accent pulse-dot"
 											style={{ animationDelay: "0.2s" }}
 										/>
 										Analyzing security headers...
 									</p>
 									<p className="flex items-center gap-2">
 										<span
-											className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot"
+											className="w-1.5 h-1.5 rounded-full bg-kanagawa-accent pulse-dot"
 											style={{ animationDelay: "0.4s" }}
 										/>
 										Running OWASP Top 10 checks...
@@ -745,24 +750,24 @@ Do not explain what you would do — provide actual working code.`;
 							</div>
 						)}
 						{result && result.status === "completed" && showResult && (
-							<div className="mt-8 pt-8 border-t border-slate-200 animate-in fade-in slide-in-from-top-4 duration-500">
-								<div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl bg-slate-50 mb-6">
+							<div className="mt-8 pt-8 border-t border-kanagawa-border animate-in fade-in slide-in-from-top-4 duration-500">
+								<div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl bg-kanagawa-surface mb-6">
 									<div className="flex items-center gap-2">
-										<div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-											<CheckCircle className="w-5 h-5 text-emerald-600" />
+										<div className="w-10 h-10 rounded-full bg-kanagawa-accent/20 flex items-center justify-center">
+											<CheckCircle className="w-5 h-5 text-kanagawa-accent" />
 										</div>
 										<div>
-											<span className="text-sm font-medium text-slate-900">
+											<span className="text-sm font-medium text-kanagawa-fg">
 												Scan complete
 											</span>
-											<span className="text-xs text-slate-500 ml-2">
+											<span className="text-xs text-kanagawa-fgMuted ml-2">
 												{result.scanDuration
 													? `${(result.scanDuration / 1000).toFixed(1)}s`
 													: ""}
 											</span>
 										</div>
 									</div>
-									<div className="text-sm text-slate-500 font-mono truncate max-w-full">
+									<div className="text-sm text-kanagawa-fgMuted font-mono truncate max-w-full">
 										{result.targetUrl}
 									</div>
 									<div className="flex flex-wrap gap-2 ml-auto items-center">
@@ -782,7 +787,7 @@ Do not explain what you would do — provide actual working code.`;
 										)}
 										<button
 											onClick={() => downloadPDF(result)}
-											className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-[0.98] mt-1 sm:mt-0"
+											className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-kanagawa-accent text-kanagawa-bg text-xs font-medium hover:bg-kanagawa-accentSoft transition-all hover:scale-[1.02] active:scale-[0.98] mt-1 sm:mt-0"
 										>
 											<FileText className="w-3.5 h-3.5" />
 											PDF
@@ -791,13 +796,13 @@ Do not explain what you would do — provide actual working code.`;
 								</div>
 								{totalFindings === 0 ? (
 									<div className="text-center py-12">
-										<div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4 floating">
-											<CheckCircle className="w-8 h-8 text-emerald-600" />
+										<div className="w-16 h-16 rounded-full bg-kanagawa-green/20 flex items-center justify-center mx-auto mb-4 floating">
+											<CheckCircle className="w-8 h-8 text-kanagawa-green" />
 										</div>
-										<h3 className="text-xl font-semibold text-slate-900 mb-2">
+										<h3 className="text-xl font-semibold text-kanagawa-fg mb-2">
 											All Good!
 										</h3>
-										<p className="text-slate-500">
+										<p className="text-kanagawa-fgMuted">
 											No security issues found. Your{" "}
 											{scanType === "github" ? "repository" : "website"} passed
 											all checks.
@@ -806,10 +811,10 @@ Do not explain what you would do — provide actual working code.`;
 								) : (
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
-											<h3 className="text-sm font-medium text-slate-900">
+											<h3 className="text-sm font-medium text-kanagawa-fg">
 												{totalFindings} Issues Found
 											</h3>
-											<span className="text-xs text-slate-500">
+											<span className="text-xs text-kanagawa-fgMuted">
 												Sorted by severity
 											</span>
 										</div>
@@ -833,21 +838,21 @@ Do not explain what you would do — provide actual working code.`;
 														<SeverityBadge severity={finding.severity} />
 														<div className="flex-1 min-w-0">
 															<div className="flex flex-wrap items-center gap-2 mb-1">
-																<span className="text-xs font-mono text-slate-400">
+																<span className="text-xs font-mono text-kanagawa-fgDim">
 																	{finding.ruleId}
 																</span>
-																<h4 className="font-medium text-slate-900 truncate">
+																<h4 className="font-medium text-kanagawa-fg truncate">
 																	{finding.title}
 																</h4>
 															</div>
-															<p className="text-sm text-slate-600 mb-3">
+															<p className="text-sm text-kanagawa-fgMuted mb-3">
 																{finding.description}
 															</p>
-															<div className="p-3 rounded-lg bg-white border border-slate-200 mb-3">
-																<p className="text-xs text-slate-400 mb-1 font-medium">
+															<div className="p-3 rounded-lg bg-kanagawa-bg border border-kanagawa-border mb-3">
+																<p className="text-xs text-kanagawa-fgDim mb-1 font-medium">
 																	How to Fix
 																</p>
-																<p className="text-sm text-slate-700">
+																<p className="text-sm text-kanagawa-fg">
 																	{finding.remediation}
 																</p>
 															</div>
@@ -855,8 +860,8 @@ Do not explain what you would do — provide actual working code.`;
 																onClick={() => handleCopyPrompt(finding)}
 																className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
 																	copiedId === finding.id
-																		? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-																		: "bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]"
+																		? "bg-kanagawa-green/20 text-kanagawa-green border border-kanagawa-green/40"
+																		: "bg-kanagawa-accent text-kanagawa-bg hover:bg-kanagawa-accentSoft hover:scale-[1.02] active:scale-[0.98]"
 																}`}
 															>
 																{copiedId === finding.id ? (
@@ -888,14 +893,14 @@ Do not explain what you would do — provide actual working code.`;
 
 function HowItWorks() {
 	return (
-		<section id="how" className="py-12 md:py-20 bg-white">
+		<section id="how" className="py-12 md:py-20 bg-kanagawa-bg">
 			<div className="max-w-5xl mx-auto px-4 md:px-6">
 				<FadeIn>
 					<div className="text-center mb-8 md:mb-14">
-						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">
+						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-kanagawa-fg mb-3">
 							Two Ways to Scan
 						</h2>
-						<p className="text-slate-600 max-w-xl mx-auto text-sm md:text-base">
+						<p className="text-kanagawa-fgMuted max-w-xl mx-auto text-sm md:text-base">
 							Most security scanners only do one or the other. VibeCheck does
 							both.
 						</p>
@@ -903,16 +908,16 @@ function HowItWorks() {
 				</FadeIn>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
 					<FadeIn delay={100}>
-						<div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-4 md:p-6 lg:p-8 text-white h-full">
+						<div className="bg-gradient-to-br from-kanagawa-surface to-kanagawa-surface2 rounded-2xl p-4 md:p-6 lg:p-8 border border-kanagawa-border text-kanagawa-fg h-full">
 							<div className="flex items-center gap-3 mb-3 md:mb-4">
-								<div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-									<Github className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
+								<div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-kanagawa-accent/20 flex items-center justify-center">
+									<Github className="w-5 h-5 md:w-6 md:h-6 text-kanagawa-accent" />
 								</div>
 								<h3 className="text-lg md:text-xl font-semibold">
 									Source Code Scanner
 								</h3>
 							</div>
-							<p className="text-slate-300 text-xs md:text-sm mb-4 md:mb-6">
+							<p className="text-kanagawa-fgMuted text-xs md:text-sm mb-4 md:mb-6">
 								Analyzes your GitHub repository for hardcoded secrets, exposed
 								credentials, misconfigurations, and vulnerable patterns in your
 								code.
@@ -935,9 +940,9 @@ function HowItWorks() {
 								].map((item, i) => (
 									<div
 										key={i}
-										className="flex items-start gap-2 text-xs md:text-sm text-slate-300"
+										className="flex items-start gap-2 text-xs md:text-sm text-kanagawa-fgMuted"
 									>
-										<CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+										<CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-kanagawa-green mt-0.5 flex-shrink-0" />
 										<span>{item}</span>
 									</div>
 								))}
@@ -945,16 +950,16 @@ function HowItWorks() {
 						</div>
 					</FadeIn>
 					<FadeIn delay={200}>
-						<div className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-2xl p-4 md:p-6 lg:p-8 text-white h-full">
+						<div className="bg-gradient-to-br from-kanagawa-violet/30 to-kanagawa-surface rounded-2xl p-4 md:p-6 lg:p-8 border border-kanagawa-violet/30 text-kanagawa-fg h-full">
 							<div className="flex items-center gap-3 mb-3 md:mb-4">
-								<div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 flex items-center justify-center">
-									<Globe className="w-5 h-5 md:w-6 md:h-6 text-emerald-200" />
+								<div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-kanagawa-violet/20 flex items-center justify-center">
+									<Globe className="w-5 h-5 md:w-6 md:h-6 text-kanagawa-accentSoft" />
 								</div>
 								<h3 className="text-lg md:text-xl font-semibold">
 									Live Site Scanner
 								</h3>
 							</div>
-							<p className="text-emerald-100/80 text-xs md:text-sm mb-4 md:mb-6">
+							<p className="text-kanagawa-fgMuted text-xs md:text-sm mb-4 md:mb-6">
 								Checks your deployed application for security headers, exposed
 								files, CORS misconfigurations, and technology fingerprints.
 							</p>
@@ -973,9 +978,9 @@ function HowItWorks() {
 								].map((item, i) => (
 									<div
 										key={i}
-										className="flex items-start gap-2 text-xs md:text-sm text-emerald-100"
+										className="flex items-start gap-2 text-xs md:text-sm text-kanagawa-fgMuted"
 									>
-										<CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+										<CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-kanagawa-accent mt-0.5 flex-shrink-0" />
 										<span>{item}</span>
 									</div>
 								))}
@@ -1019,7 +1024,7 @@ function BestPractices() {
 			title: "4. Sanitize User Input",
 			description:
 				"Always validate and sanitize user input. Use parameterized queries to prevent SQL injection and output encoding to prevent XSS.",
-			code: "// Use parameterized queries\nconst { data } = await supabase\\\\\\n  .from('users')\n  .select('*')\n  .eq('id', userId);",
+			code: "// Use parameterized queries\nconst { data } = await supabase\n  .from('users')\n  .select('*')\n  .eq('id', userId);",
 			tags: ["Injection", "Validation"],
 		},
 		{
@@ -1041,14 +1046,14 @@ function BestPractices() {
 	];
 
 	return (
-		<section id="best-practices" className="py-12 md:py-20 bg-slate-50">
+		<section id="best-practices" className="py-12 md:py-20 bg-kanagawa-surface">
 			<div className="max-w-5xl mx-auto px-4 md:px-6">
 				<FadeIn>
 					<div className="text-center mb-8 md:mb-14">
-						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">
+						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-kanagawa-fg mb-3">
 							Web App Security Best Practices
 						</h2>
-						<p className="text-slate-600 max-w-xl mx-auto text-sm md:text-base">
+						<p className="text-kanagawa-fgMuted max-w-xl mx-auto text-sm md:text-base">
 							Implement these 6 practices to secure your vibe-coded applications
 						</p>
 					</div>
@@ -1056,20 +1061,20 @@ function BestPractices() {
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
 					{practices.map((practice, i) => (
 						<FadeIn key={i} delay={i * 100}>
-							<div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 group">
+							<div className="bg-kanagawa-bg rounded-2xl p-5 md:p-6 border border-kanagawa-border hover:border-kanagawa-accent/40 hover:shadow-lg transition-all duration-300 group">
 								<div className="flex items-start gap-4">
-									<div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center flex-shrink-0 transition-colors">
-										<practice.icon className="w-5 h-5 md:w-6 md:h-6 text-emerald-600" />
+									<div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-kanagawa-accent/15 group-hover:bg-kanagawa-accent/25 flex items-center justify-center flex-shrink-0 transition-colors">
+										<practice.icon className="w-5 h-5 md:w-6 md:h-6 text-kanagawa-accent" />
 									</div>
 									<div className="flex-1 min-w-0">
-										<h3 className="font-semibold text-slate-900 mb-2 text-sm md:text-base">
+										<h3 className="font-semibold text-kanagawa-fg mb-2 text-sm md:text-base">
 											{practice.title}
 										</h3>
-										<p className="text-slate-600 text-xs md:text-sm mb-3">
+										<p className="text-kanagawa-fgMuted text-xs md:text-sm mb-3">
 											{practice.description}
 										</p>
-										<div className="bg-slate-900 rounded-lg p-3 mb-3 overflow-x-auto">
-											<code className="text-emerald-400 text-xs font-mono whitespace-nowrap">
+										<div className="bg-kanagawa-surface rounded-lg p-3 mb-3 overflow-x-auto border border-kanagawa-border">
+											<code className="text-kanagawa-green text-xs font-mono whitespace-nowrap">
 												{practice.code}
 											</code>
 										</div>
@@ -1077,7 +1082,7 @@ function BestPractices() {
 											{practice.tags.map((tag, j) => (
 												<span
 													key={j}
-													className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-xs"
+													className="px-2 py-1 rounded-full bg-kanagawa-surface text-kanagawa-fgMuted text-xs"
 												>
 													{tag}
 												</span>
@@ -1093,7 +1098,7 @@ function BestPractices() {
 					<div className="mt-8 text-center">
 						<a
 							href="#scanner"
-							className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm transition-colors"
+							className="inline-flex items-center gap-2 text-kanagawa-accent hover:text-kanagawa-accentSoft font-medium text-sm transition-colors"
 						>
 							<Bug className="w-4 h-4" />
 							Scan your app to find issues
@@ -1156,14 +1161,14 @@ function Features() {
 		},
 	];
 	return (
-		<section id="features" className="py-12 md:py-20 bg-slate-50">
+		<section id="features" className="py-12 md:py-20 bg-kanagawa-surface">
 			<div className="max-w-5xl mx-auto px-4 md:px-6">
 				<FadeIn>
 					<div className="text-center mb-8 md:mb-14">
-						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">
+						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-kanagawa-fg mb-3">
 							Everything You Need
 						</h2>
-						<p className="text-slate-600 max-w-xl mx-auto text-sm md:text-base">
+						<p className="text-kanagawa-fgMuted max-w-xl mx-auto text-sm md:text-base">
 							Professional-grade security scanning, completely free
 						</p>
 					</div>
@@ -1171,14 +1176,14 @@ function Features() {
 				<div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
 					{features.map((feature, i) => (
 						<FadeIn key={i} delay={i * 100}>
-							<div className="feature-card group p-4 md:p-5 lg:p-6 rounded-2xl bg-white border border-slate-200 h-full">
-								<div className="w-9 h-9 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center mb-3 md:mb-4 transition-colors">
-									<feature.icon className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-emerald-600" />
+							<div className="feature-card group p-4 md:p-5 lg:p-6 rounded-2xl bg-kanagawa-bg border border-kanagawa-border h-full">
+								<div className="w-9 h-9 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded-xl bg-kanagawa-accent/15 group-hover:bg-kanagawa-accent/25 flex items-center justify-center mb-3 md:mb-4 transition-colors">
+									<feature.icon className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-kanagawa-accent" />
 								</div>
-								<h3 className="font-semibold text-slate-900 mb-1 md:mb-2 text-xs md:text-sm lg:text-base">
+								<h3 className="font-semibold text-kanagawa-fg mb-1 md:mb-2 text-xs md:text-sm lg:text-base">
 									{feature.title}
 								</h3>
-								<p className="text-xs text-slate-600 leading-relaxed">
+								<p className="text-xs text-kanagawa-fgMuted leading-relaxed">
 									{feature.description}
 								</p>
 							</div>
@@ -1212,14 +1217,14 @@ function Testimonials() {
 		},
 	];
 	return (
-		<section className="py-12 md:py-20 bg-white">
+		<section className="py-12 md:py-20 bg-kanagawa-bg">
 			<div className="max-w-5xl mx-auto px-4 md:px-6">
 				<FadeIn>
 					<div className="text-center mb-8 md:mb-14">
-						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 mb-3">
+						<h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-kanagawa-fg mb-3">
 							Loved by Developers
 						</h2>
-						<p className="text-slate-600 text-sm md:text-base">
+						<p className="text-kanagawa-fgMuted text-sm md:text-base">
 							Join thousands of developers who ship safer code
 						</p>
 					</div>
@@ -1227,23 +1232,23 @@ function Testimonials() {
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
 					{testimonials.map((t, i) => (
 						<FadeIn key={i} delay={i * 100}>
-							<div className="card-hover p-4 md:p-6 rounded-2xl bg-slate-50 border border-slate-100">
+							<div className="card-hover p-4 md:p-6 rounded-2xl bg-kanagawa-surface border border-kanagawa-border">
 								<div className="flex gap-1 mb-3 md:mb-4">
 									{[...Array(5)].map((_, j) => (
 										<Star
 											key={j}
-											className="w-4 h-4 fill-yellow-400 text-yellow-400"
+											className="w-4 h-4 fill-kanagawa-yellow text-kanagawa-yellow"
 										/>
 									))}
 								</div>
-								<p className="text-slate-700 text-sm mb-3 md:mb-4">
-									&ldquo;{t.quote}&rdquo;
+								<p className="text-kanagawa-fgMuted text-sm mb-3 md:mb-4">
+									"{t.quote}"
 								</p>
 								<div>
-									<div className="font-medium text-slate-900 text-sm">
+									<div className="font-medium text-kanagawa-fg text-sm">
 										{t.author}
 									</div>
-									<div className="text-xs text-slate-500">{t.role}</div>
+									<div className="text-xs text-kanagawa-fgDim">{t.role}</div>
 								</div>
 							</div>
 						</FadeIn>
@@ -1256,25 +1261,25 @@ function Testimonials() {
 
 function CTA() {
 	return (
-		<section className="py-16 md:py-20 bg-gradient-to-br from-slate-900 to-slate-800">
+		<section className="py-16 md:py-20 bg-gradient-to-br from-kanagawa-surface to-kanagawa-surface2 relative overflow-hidden">
 			<div className="absolute inset-0 overflow-hidden pointer-events-none">
 				<FloatingParticles />
 			</div>
 			<div className="relative max-w-3xl mx-auto px-6 text-center">
 				<FadeIn>
-					<h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4">
+					<h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-kanagawa-fg mb-4">
 						Need Help Fixing the Issues?
 					</h2>
-					<p className="text-lg text-slate-300 mb-4">
-						Every finding includes an &ldquo;AI Fix Prompt&rdquo; — copy it and paste into
+					<p className="text-lg text-kanagawa-fgMuted mb-4">
+						Every finding includes an "AI Fix Prompt" — copy it and paste into
 						your favorite AI agent for step-by-step fix instructions.
 					</p>
-					<p className="text-md text-emerald-400 mb-8">
+					<p className="text-md text-kanagawa-accent mb-8">
 						Free • No Signup • Works with Lovable, Bolt, Cursor, Replit & more
 					</p>
 					<a
 						href="#scanner"
-						className="btn-glow group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-400 transition-all hover:gap-3 border-glow"
+						className="btn-glow group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-kanagawa-accent text-kanagawa-bg font-medium hover:bg-kanagawa-accentSoft transition-all hover:gap-3 border-glow"
 					>
 						Scan Your App Now{" "}
 						<ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
@@ -1287,16 +1292,16 @@ function CTA() {
 
 function Footer() {
 	return (
-		<footer className="border-t border-slate-200 bg-white py-8">
+		<footer className="border-t border-kanagawa-border bg-kanagawa-bg py-8">
 			<div className="max-w-5xl mx-auto px-6">
 				<div className="flex flex-col items-center gap-4 text-center">
 					<a
 						href="#scanner"
-						className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition"
+						className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-kanagawa-accent text-kanagawa-bg text-sm font-medium hover:bg-kanagawa-accentSoft transition"
 					>
 						Free Security Scanner for Vibe-Coded Apps
 					</a>
-					<p className="text-sm text-slate-400">
+					<p className="text-sm text-kanagawa-fgDim">
 						Copyright © {new Date().getFullYear()}
 					</p>
 				</div>
@@ -1306,13 +1311,49 @@ function Footer() {
 }
 
 export default function Home() {
+	const [statsData, setStatsData] = useState<StatsData>({
+		uniqueSites: 0,
+		totalScans: 0,
+		uniqueVulnerabilities: 0,
+		totalVulnerabilities: 0,
+	});
+	const [statsLoaded, setStatsLoaded] = useState(false);
+
+	// Pull the real, deduplicated counters from the server. The four values
+	// come straight from Supabase aggregates (see /api/stats) - in particular
+	// `uniqueVulnerabilities` is the count of distinct rule_ids across every
+	// scan we have ever performed, so re-scanning the same site never doubles
+	// a counter.
+	const refetchStats = useCallback(async () => {
+		try {
+			const res = await fetch("/api/stats", { method: "GET" });
+			if (!res.ok) return;
+			const data = await res.json();
+			setStatsData({
+				uniqueSites: data.uniqueSites || 0,
+				totalScans: data.totalScans || 0,
+				uniqueVulnerabilities: data.uniqueVulnerabilities || 0,
+				totalVulnerabilities: data.totalVulnerabilities || 0,
+			});
+		} catch {
+			// Stats are non-critical; ignore transient failures.
+		} finally {
+			setStatsLoaded(true);
+		}
+	}, []);
+
+	// Initial load
+	useEffect(() => {
+		refetchStats();
+	}, [refetchStats]);
+
 	return (
-		<main className="min-h-screen bg-white text-slate-900 antialiased">
+		<main className="min-h-screen bg-kanagawa-bg text-kanagawa-fg antialiased">
 			<Header />
 			<Hero />
-			<Stats />
+			<Stats statsData={statsData} loaded={statsLoaded} />
 			<RealityCheck />
-			<Scanner />
+			<Scanner onScanComplete={refetchStats} />
 			<HowItWorks />
 			<BestPractices />
 			<Features />

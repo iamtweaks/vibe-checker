@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { buildCorsHeaders } from "@/lib/security-headers";
 import { validateGitHubUrl, checkRateLimit } from "@/lib/validation";
 import { scanGitHubRepo } from "@/lib/scanners/github";
 import { createClient } from "@/utils/supabase/server";
+import { getCorsHeaders, getPreflightHeaders } from "@/lib/cors";
+import { persistScan } from "@/lib/db/persistence";
 import type { ScanAPIResponse, SeverityCounts } from "@/lib/types";
 
 export async function OPTIONS(request: NextRequest) {
-	return NextResponse.json({}, { headers: buildCorsHeaders(request) });
+	return NextResponse.json({}, { headers: getPreflightHeaders(request) });
 }
 
 export async function POST(request: NextRequest) {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 				{
 					status: 429,
 					headers: {
-						...buildCorsHeaders(request),
+						...getCorsHeaders(request),
 						"Retry-After": String(
 							Math.ceil((rateLimitResult.retryAfter || 1000) / 1000),
 						),
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
 		} catch {
 			return NextResponse.json(
 				{ error: "Invalid JSON in request body", code: "INVALID_JSON" },
-				{ status: 400, headers: buildCorsHeaders(request) },
+				{ status: 400, headers: getCorsHeaders(request) },
 			);
 		}
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
 		if (!url || typeof url !== "string") {
 			return NextResponse.json(
 				{ error: "URL is required", code: "URL_REQUIRED" },
-				{ status: 400, headers: buildCorsHeaders(request) },
+				{ status: 400, headers: getCorsHeaders(request) },
 			);
 		}
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
 		if (!validation.valid) {
 			return NextResponse.json(
 				{ error: validation.error, code: validation.code },
-				{ status: 400, headers: buildCorsHeaders(request) },
+				{ status: 400, headers: getCorsHeaders(request) },
 			);
 		}
 
@@ -84,40 +85,21 @@ export async function POST(request: NextRequest) {
 			scanDuration: result.scanDuration,
 		};
 
-		// Persist scan to Supabase database
+		// Persist scan to Supabase using the canonical persistence layer.
+		// All dedupe/normalization happens there — see src/lib/db/persistence.ts.
 		try {
 			const supabase = await createClient();
-
-			// Normalize URL
-			const normalizedUrl = url.trim().toLowerCase().replace(/\/$/, "");
-
-			// Extract owner/repo from github URL
-			const match = normalizedUrl.match(/github\.com\/([^/]+\/[^/]+)/);
-			const domain = match ? match[1] : normalizedUrl;
-
-			// Get or create website
-			const { data: websiteId } = await supabase.rpc("get_or_create_website", {
-				p_url: normalizedUrl,
+			await persistScan({
+				supabase,
+				kind: "github",
+				rawUrl: url.trim(),
+				findings: result.findings,
+				severityCounts: result.severityCounts as Record<
+					import("@/lib/types").Severity,
+					number
+				>,
+				scanDurationMs: result.scanDuration || 0,
 			});
-
-			if (websiteId) {
-				// Store the scan
-				const { error: scanError } = await supabase.from("scans").insert({
-					website_id: websiteId,
-					scan_type: "github",
-					target_url: normalizedUrl,
-					findings_count: result.findings.length,
-					severity_counts: result.severityCounts,
-					findings: result.findings,
-					scan_duration_ms: result.scanDuration || 0,
-					status: "completed",
-				});
-
-				if (scanError) {
-					console.error("Failed to save scan to database:", scanError);
-					// Don't fail the scan if DB save fails
-				}
-			}
 		} catch (dbError) {
 			console.error("Database error:", dbError);
 			// Don't fail the scan if DB is unavailable
@@ -125,7 +107,7 @@ export async function POST(request: NextRequest) {
 
 		return NextResponse.json(response, {
 			headers: {
-				...buildCorsHeaders(request),
+				...getCorsHeaders(request),
 				"X-RateLimit-Remaining": String(rateLimitResult.remainingRequests ?? 0),
 			},
 		});
@@ -136,7 +118,7 @@ export async function POST(request: NextRequest) {
 		if (error.message?.includes("Invalid GitHub URL")) {
 			return NextResponse.json(
 				{ error: "Invalid GitHub repository URL", code: "INVALID_URL" },
-				{ status: 400, headers: buildCorsHeaders(request) },
+				{ status: 400, headers: getCorsHeaders(request) },
 			);
 		}
 
@@ -149,7 +131,7 @@ export async function POST(request: NextRequest) {
 					error: "Repository not found or is not public",
 					code: "REPO_NOT_FOUND",
 				},
-				{ status: 404, headers: buildCorsHeaders(request) },
+				{ status: 404, headers: getCorsHeaders(request) },
 			);
 		}
 
@@ -160,7 +142,7 @@ export async function POST(request: NextRequest) {
 						"Could not access repository. Make sure it exists and is public.",
 					code: "ACCESS_DENIED",
 				},
-				{ status: 403, headers: buildCorsHeaders(request) },
+				{ status: 403, headers: getCorsHeaders(request) },
 			);
 		}
 
@@ -171,7 +153,7 @@ export async function POST(request: NextRequest) {
 						"GitHub API rate limit exceeded. Try again later or provide a GitHub token.",
 					code: "GITHUB_RATE_LIMIT",
 				},
-				{ status: 429, headers: buildCorsHeaders(request) },
+				{ status: 429, headers: getCorsHeaders(request) },
 			);
 		}
 
@@ -180,7 +162,7 @@ export async function POST(request: NextRequest) {
 				error: error.message || "Scan failed. Please try again.",
 				code: "SCAN_FAILED",
 			},
-			{ status: 500, headers: buildCorsHeaders(request) },
+			{ status: 500, headers: getCorsHeaders(request) },
 		);
 	}
 }

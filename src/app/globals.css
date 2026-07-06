@@ -3,8 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --primary: #22c55e;
-  --accent: #34d399;
+  --bg: #1F1F28;
+  --surface: #2A2A37;
+  --surface-2: #363646;
+  --border: #54546D;
+  --fg: #DCD7BA;
+  --fg-muted: #C8C093;
+  --fg-dim: #727169;
+  --accent: #7E9CD8;
+  --accent-soft: #9CABCA;
+  --violet: #957FB8;
+  --pink: #D27E99;
+  --red: #E82424;
+  --peach: #FF5D62;
+  --orange: #FFA066;
+  --yellow: #FF9E3B;
+  --green: #98BB6C;
+  --aqua: #7AA89F;
+  --teal: #7FB4CA;
+  --blue: #658594;
 }
 
 * {
@@ -19,11 +36,13 @@ html {
 
 body {
   overflow-x: hidden;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 /* ─── Gradient Text ─── */
 .gradient-text {
-  background: linear-gradient(135deg, #22c55e 0%, #34d399 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--teal) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -74,9 +93,9 @@ body {
   position: absolute;
   width: 4px;
   height: 4px;
-  background: #34d399;
+  background: var(--accent);
   border-radius: 50%;
-  box-shadow: 0 0 8px 2px rgba(52, 211, 153, 0.6);
+  box-shadow: 0 0 8px 2px rgba(126, 156, 216, 0.6);
   animation: glint-float 6s ease-in-out infinite;
   pointer-events: none;
 }
@@ -110,7 +129,7 @@ body {
   content: '';
   position: absolute;
   inset: -2px;
-  background: linear-gradient(135deg, #22c55e, #34d399, #22c55e);
+  background: linear-gradient(135deg, var(--accent), var(--teal), var(--accent));
   background-size: 200% 200%;
   border-radius: inherit;
   opacity: 0;
@@ -132,7 +151,7 @@ body {
 /* ─── Scanner Button Gradient Animation ─── */
 .btn-scan {
   position: relative;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #22c55e 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--violet) 50%, var(--accent) 100%);
   background-size: 200% 200%;
   animation: scan-gradient 3s ease infinite;
   transition: all 0.3s ease;
@@ -140,7 +159,7 @@ body {
 
 .btn-scan:hover {
   background-position: 100% 100%;
-  box-shadow: 0 8px 30px -8px rgba(34, 197, 94, 0.6);
+  box-shadow: 0 8px 30px -8px rgba(126, 156, 216, 0.6);
   transform: translateY(-1px);
 }
 
@@ -163,7 +182,7 @@ body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 2px solid #22c55e;
+  border: 2px solid var(--accent);
   animation: scan-pulse-ring 1.5s ease-out infinite;
 }
 
@@ -194,7 +213,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.4),
+    rgba(220, 215, 186, 0.15),
     transparent
   );
   animation: shimmer-slide 2s ease-in-out infinite;
@@ -213,7 +232,7 @@ body {
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px -15px rgba(126, 156, 216, 0.2);
 }
 
 /* ─── Enhanced FadeIn Animations ─── */
@@ -245,11 +264,11 @@ body {
 .progress-gradient {
   background: linear-gradient(
     90deg,
-    #22c55e 0%,
-    #34d399 25%,
-    #22c55e 50%,
-    #34d399 75%,
-    #22c55e 100%
+    var(--accent) 0%,
+    var(--teal) 25%,
+    var(--accent) 50%,
+    var(--teal) 75%,
+    var(--accent) 100%
   );
   background-size: 200% 100%;
   animation: progress-shimmer 1.5s linear infinite;
@@ -269,7 +288,7 @@ body {
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px -10px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 10px 30px -10px rgba(126, 156, 216, 0.3);
 }
 
 .stat-card::before {
@@ -282,7 +301,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.1),
+    rgba(220, 215, 186, 0.06),
     transparent
   );
   animation: stat-shimmer 3s ease-in-out infinite;
@@ -300,15 +319,15 @@ body {
 }
 
 .feature-card:hover {
-  border-color: rgba(34, 197, 94, 0.4);
-  box-shadow: 0 0 30px -10px rgba(34, 197, 94, 0.3);
+  border-color: rgba(126, 156, 216, 0.4);
+  box-shadow: 0 0 30px -10px rgba(126, 156, 216, 0.3);
   transform: translateY(-2px);
 }
 
 /* ─── Loading Spinner ─── */
-.spinner-emerald {
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #22c55e;
+.spinner-kanagawa {
+  border: 2px solid rgba(220, 215, 186, 0.3);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -360,7 +379,7 @@ body {
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, #22c55e, #34d399, #22c55e);
+  background: linear-gradient(135deg, var(--accent), var(--teal), var(--accent));
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: -1;

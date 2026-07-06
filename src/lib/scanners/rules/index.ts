@@ -178,6 +178,162 @@ function checkSupabaseRLS(content: string, filePath: string): Finding[] {
 	return findings;
 }
 
+// ============== OWASP A01:2021 — BROKEN ACCESS CONTROL ==============
+// IDOR: API route takes an id from URL/path without ownership check.
+function checkIdorRoute(content: string, filePath: string): boolean {
+	const isApiRoute = /[/\\]app[\\/]api[\\/][^"'\s]+[/\\]route\.(ts|tsx|js|jsx)/i.test(
+		filePath,
+	);
+	if (!isApiRoute) return false;
+	const usesParam = /params\.|req\.params|request\.params|URLSearchParams|searchParams|\.pathname|catch\s*\(\s*\{\s*params\b|\{\s*params\s*:\s*\{\s*id/i.test(
+		content,
+	);
+	if (!usesParam) return false;
+	const hasOwnershipCheck = /auth\.uid\(\)|getUser\(|getSession\(|verifyToken|authoriz|ownsThis|userId\s*===|currentUser\.id\s*===/i.test(
+		content,
+	);
+	return !hasOwnershipCheck;
+}
+
+// ============== OWASP A02:2021 — CRYPTOGRAPHIC FAILURES ==============
+// Use of broken hash algorithms (md5/sha1) for password or token storage.
+function checkWeakHashing(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	const hasHash = /crypto\.createHash|require\(['"]crypto['"]\)|from\s+['"]crypto['"]|hashlib\./i.test(
+		content,
+	);
+	if (!hasHash) return false;
+	return /\bmd5\b|\bsha1\b/i.test(content);
+}
+
+// Plaintext password storage in a DB schema or migration file.
+function checkPlaintextPasswordColumn(content: string, filePath: string): boolean {
+	if (!/\.(sql|prisma|ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	const hasPasswordColumn = /(password|passwd|pwd)\s+(varchar|text|string|String)/i.test(
+		content,
+	);
+	const hasHashingHint = /\b(bcrypt|argon2|scrypt|crypt)\b/i.test(content);
+	return hasPasswordColumn && !hasHashingHint;
+}
+
+// ============== OWASP A04:2021 — INSECURE DESIGN ==============
+// Hardcoded role check without server-side enforcement hint.
+function checkHardcodedRoleCheck(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	return /role\s*[!=]==\s*['"](?:admin|root|superuser|owner)['"]/i.test(content);
+}
+
+// ============== OWASP A07:2021 — IDENTIFICATION & AUTH FAILURES ==============
+// JWT signed without expiry ("expiresIn") claim or no exp validation.
+function checkJwtMissingExpiry(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	const usesJwt =
+		/jwt\.sign|jwt\.verify|jsonwebtoken|@nestjs\/jwt|fastify-jwt|express-jwt/i.test(
+			content,
+		);
+	if (!usesJwt) return false;
+	const hasExpiry = /expiresIn|exp\s*:|jwt\.options|jwtid|exp\s*\)/i.test(content);
+	return !hasExpiry;
+}
+
+// Cookie set without Secure/HttpOnly/SameSite flags.
+function checkInsecureCookie(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	const setsCookie = /res\.cookie\(|cookies\.set\(|setCookie\(|document\.cookie\s*=/i.test(
+		content,
+	);
+	if (!setsCookie) return false;
+	const hasFlags = /httpOnly\s*:\s*true|secure\s*:\s*true|sameSite\s*:\s*['"](?:lax|strict|none)['"]|SameSite\s*=\s*(?:Lax|Strict)/i.test(
+		content,
+	);
+	return !hasFlags;
+}
+
+// ============== OWASP A08:2021 — SOFTWARE & DATA INTEGRITY FAILURES ==============
+// Use of dangerous deserializers (node-serialize, eval, yaml.load).
+function checkUnsafeDeserialization(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	return /require\(['"]node-serialize['"]\)|require\(['"]serialize-javascript['"]\)|yaml\.load\(|pickle\.loads|yaml\.unsafe_load|JSON\.parse\(\s*req\.body/i.test(
+		content,
+	);
+}
+
+// ============== OWASP A09:2021 — SECURITY LOGGING & MONITORING FAILURES ==============
+// Auth route that returns success but has no logging hook nearby.
+function checkAuthRouteWithoutLogging(content: string, filePath: string): boolean {
+	if (!/[/\\]app[\\/]api[\\/](?:login|auth|signin|signup|register|reset-password|verify)/i.test(filePath)) {
+		return false;
+	}
+	const hasLogger = /logger\.|pino\.|winston\.|console\.(info|warn|error|log)|sentry|captureMessage|breadcrumb/i.test(
+		content,
+	);
+	return !hasLogger;
+}
+
+// ============== OWASP A10:2021 / 2025 — SSRF & EXCEPTIONAL CONDITIONS ==============
+// User-controlled URL passed to fetch / axios / http without allowlist.
+function checkPotentialSsrf(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	const fetchesUserUrl =
+		/(?:fetch|axios\.(?:get|post|put|delete|request)|got\(|http\.get|https\.get)\s*\(\s*(?:req\.body|req\.query|req\.params|params\.|searchParams|userUrl|targetUrl|inputUrl|url)/i.test(
+			content,
+		);
+	if (!fetchesUserUrl) return false;
+	const hasAllowlist = /allowlist|allowList|allowedHosts|allowedDomains|isPrivateIp|ipRange|denyPrivate|validateUrl|safeUrl|isAllowedUrl/i.test(
+		content,
+	);
+	return !hasAllowlist;
+}
+
+// Unhandled promise rejection / unsafe await that swallows errors.
+function checkSwallowedErrors(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	return /\.catch\s*\(\s*\(\s*\)\s*=>\s*\{\s*\}\s*\)|\.catch\s*\(\s*\(\)\s*=>\s*null\s*\)/i.test(
+		content,
+	);
+}
+
+// ============== XSS PREVENTION (OWASP Cheat Sheet) ==============
+// Use of Function() constructor or setTimeout/setInterval with string body.
+function checkCodeInjectionSink(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	return /new\s+Function\s*\(|set(?:Timeout|Interval)\s*\(\s*['"`]|setImmediate\s*\(\s*['"`]/i.test(
+		content,
+	);
+}
+
+// ============== SQL INJECTION PREVENTION (OWASP Cheat Sheet) ==============
+// Prisma raw queries that interpolate parameters instead of using $queryRaw template.
+function checkPrismaRawInjection(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	return /\$executeRaw\s*\(\s*[`'"][^`'"]*\$\{|Prisma\.sql\s*\(\s*[`'"][^`'"]*\bSELECT\b[^`'"]*\$\{/i.test(
+		content,
+	);
+}
+
+// ============== CRYPTO / SECRETS (hardening beyond existing rules) ==============
+// Hardcoded fallback secret in process.env check (anti-pattern).
+function checkHardcodedSecretFallback(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	return /process\.env\.[A-Z_]+\s*\|\|\s*['"][A-Za-z0-9_\-]{12,}['"]/i.test(content);
+}
+
+// ============== CSRF (OWASP Cheat Sheet) ==============
+// Next.js / Express form handler that mutates state but never checks CSRF token.
+function checkMutatingRouteWithoutCsrf(content: string, filePath: string): boolean {
+	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
+	const isMutating =
+		/export\s+(?:async\s+)?function\s+(?:POST|PUT|PATCH|DELETE)\b|router\.post\(|router\.put\(|router\.delete\(|router\.patch\(/i.test(
+			content,
+		);
+	if (!isMutating) return false;
+	const hasCsrf =
+		/csrf|csrfToken|csurf|samesite-token|origin\s*===|verifyCsrf|x-csrf-token/i.test(
+			content,
+		);
+	return !hasCsrf;
+}
+
 export const GITHUB_SCANNER_RULES: ScanRule[] = [
 	{
 		id: "SUPABASE001",
@@ -1029,6 +1185,191 @@ export function scanContent(content: string, filePath: string): Finding[] {
 			remediation:
 				"Use environment variables: process.env.SUPABASE_KEY. Never commit Supabase anon/service keys to version control. Add .env to .gitignore and use a secrets manager for production.",
 		});
+	}
+
+	// ---- OWASP Top 10 (2021 + 2025) + Cheat Sheets per-file detectors ----
+	const owaspFileChecks: Array<{
+		check: (c: string, p: string) => boolean;
+		finding: Omit<Finding, "id" | "filePath" | "lineNumber" | "snippet">;
+	}> = [
+		{
+			check: checkIdorRoute,
+			finding: {
+				ruleId: "A01-IDOR",
+				severity: "high",
+				title: "API Route With ID Parameter Without Ownership Check (OWASP A01:2021)",
+				description:
+					"API route reads an id from the request and uses it to load data, but no ownership check is visible. This pattern is the canonical IDOR (Insecure Direct Object Reference) — a user can read or mutate another user's data by guessing ids (CWE-639).",
+				remediation:
+					"After loading the resource, verify the caller owns it: const { data: { user } } = await supabase.auth.getUser(); if (record.user_id !== user.id) return new Response('Forbidden', { status: 403 });. For Next.js API routes, gate every handler with auth + ownership check or use row-level security on the underlying table.",
+			},
+		},
+		{
+			check: checkWeakHashing,
+			finding: {
+				ruleId: "A02-WEAK-HASH",
+				severity: "high",
+				title: "Weak Hash Algorithm (MD5/SHA1) for Crypto (OWASP A02:2021)",
+				description:
+					"Crypto code uses MD5 or SHA-1. These are collision-broken and unsuitable for password storage, token integrity, or digital signatures. Attackers can craft collisions and brute-force pre-images cheaply (CWE-327, CWE-916).",
+				remediation:
+					"For passwords: use bcrypt, scrypt, argon2 or PBKDF2 with high work factor. For digital signatures / integrity: use SHA-256 or SHA-3. For tokens / HMAC: use SHA-256 with a random key of at least 256 bits.",
+			},
+		},
+		{
+			check: checkPlaintextPasswordColumn,
+			finding: {
+				ruleId: "A02-PLAINTEXT-PWD",
+				severity: "critical",
+				title: "Password Column Without Hashing Hint (OWASP A02:2021)",
+				description:
+					"Schema or migration defines a password column with no sign of hashing (bcrypt/argon2/scrypt). If the app stores raw passwords there, a single DB leak exposes every credential (CWE-256, CWE-257).",
+				remediation:
+					"Never store plaintext passwords. Hash on write with bcrypt (cost ≥ 12) or argon2id. If migrating an existing table, force a password reset on next login.",
+			},
+		},
+		{
+			check: checkHardcodedRoleCheck,
+			finding: {
+				ruleId: "A04-HARDCODED-ROLE",
+				severity: "medium",
+				title: "Hardcoded Role String Comparison (OWASP A04:2021)",
+				description:
+					"Authorization code compares role against a hardcoded literal (admin/root). This is brittle and easy to bypass if the role label changes or if the same string is reused for unrelated checks (CWE-1188).",
+				remediation:
+					"Use a role/permission enum and centralize authorization checks (e.g., requireRole('admin')) instead of literal compares. Enforce in middleware, not just in the handler.",
+			},
+		},
+		{
+			check: checkJwtMissingExpiry,
+			finding: {
+				ruleId: "A07-JWT-NO-EXP",
+				severity: "high",
+				title: "JWT Without Expiry Claim (OWASP A07:2021)",
+				description:
+					"JWT is signed or verified without an explicit `expiresIn` / `exp` claim. Tokens live forever once issued, so stolen tokens grant permanent access and there is no automatic session rotation (CWE-613).",
+				remediation:
+					"Always set expiresIn when signing (e.g., jwt.sign(payload, secret, { expiresIn: '15m' })). On verify, require exp and reject tokens where exp is missing or in the past.",
+			},
+		},
+		{
+			check: checkInsecureCookie,
+			finding: {
+				ruleId: "A07-COOKIE-FLAGS",
+				severity: "high",
+				title: "Cookie Set Without HttpOnly/Secure/SameSite (OWASP A07:2021)",
+				description:
+					"A cookie is set without the HttpOnly, Secure, or SameSite flags. Such cookies are readable from JavaScript (XSS-stealable) and can leak over plaintext HTTP or in cross-site requests (CWE-1004, CWE-614, CWE-1275).",
+				remediation:
+					"Set httpOnly: true, secure: true, sameSite: 'lax' (or 'strict') on every auth or session cookie. For session middleware in Next.js/Express, configure these flags globally.",
+			},
+		},
+		{
+			check: checkUnsafeDeserialization,
+			finding: {
+				ruleId: "A08-UNSAFE-DESERIALIZE",
+				severity: "critical",
+				title: "Unsafe Deserialization (OWASP A08:2021)",
+				description:
+					"Code uses a known-unsafe deserializer (node-serialize, serialize-javascript, yaml.load, JSON.parse on req.body without validation). Crafted payloads can lead to remote code execution (CWE-502).",
+				remediation:
+					"Never deserialize untrusted input with code-executing parsers. Validate JSON Schema before JSON.parse. Use yaml.safeLoad / yaml.load with a custom safe schema. Avoid node-serialize entirely.",
+			},
+		},
+		{
+			check: checkAuthRouteWithoutLogging,
+			finding: {
+				ruleId: "A09-AUTH-NO-LOG",
+				severity: "medium",
+				title: "Auth Handler Without Security Logging (OWASP A09:2021)",
+				description:
+					"Login/signup/reset-password handler returns a result but has no logger, monitoring, or audit hook. Auth events are the highest-value events to log — without them, credential stuffing and account takeover are invisible (CWE-778).",
+				remediation:
+					"Log auth successes and failures with: timestamp, user id (when known), source IP, user agent, and reason. Forward to a SIEM or at minimum to durable structured logs.",
+			},
+		},
+		{
+			check: checkPotentialSsrf,
+			finding: {
+				ruleId: "A10-SSRF",
+				severity: "high",
+				title: "Server Fetches User-Controlled URL Without Allowlist (OWASP A10:2021)",
+				description:
+					"A handler reads a URL from the request and passes it to fetch/axios/http.get without validating the host. An attacker can point it at 169.254.169.254 (cloud metadata), localhost admin panels, or internal services (CWE-918).",
+				remediation:
+					"Resolve the host and reject private/loopback/link-local IPs (RFC1918, 127.0.0.0/8, 169.254.0.0/16, ::1). Use an explicit allowlist of trusted hosts. Disable HTTP redirects or revalidate after each hop.",
+			},
+		},
+		{
+			check: checkSwallowedErrors,
+			finding: {
+				ruleId: "A10-SWALLOWED-ERROR",
+				severity: "low",
+				title: "Empty Catch Block Silencing Errors (OWASP A10:2025)",
+				description:
+					"A `.catch(() => {})` or `.catch(() => null)` swallows every error silently. Failures that should surface — network errors, validation errors, auth errors — are invisible, masking real bugs and security regressions (CWE-703, OWASP A10:2025 — Mishandling of Exceptional Conditions).",
+				remediation:
+					"Log or rethrow caught errors. If you intentionally ignore a specific error, narrow the catch (e.g., check the error type) and leave a comment explaining why.",
+			},
+		},
+		{
+			check: checkCodeInjectionSink,
+			finding: {
+				ruleId: "XSS-CODE-INJECT",
+				severity: "high",
+				title: "Code Injection Sink: new Function / setTimeout-with-string (XSS Cheat Sheet)",
+				description:
+					"Code uses `new Function(...)`, `setTimeout('...', n)` or `setInterval('...', n)` with a string body. Strings are evaluated as JavaScript; an attacker who controls the string gets RCE or XSS in the browser (CWE-95, CWE-79).",
+				remediation:
+					"Pass function references instead of strings: setTimeout(handler, n). Avoid `new Function`. For dynamic code paths, use a whitelist lookup table rather than eval/Function.",
+			},
+		},
+		{
+			check: checkPrismaRawInjection,
+			finding: {
+				ruleId: "SQLI-PRISMA-RAW",
+				severity: "critical",
+				title: "Prisma $executeRaw / $queryRaw With String Interpolation (SQLi Cheat Sheet)",
+				description:
+					"`prisma.$executeRaw` / `Prisma.sql` is called with a template literal that interpolates a variable. Prisma cannot parameterize interpolated values, so user input lands directly in the SQL string (CWE-89).",
+				remediation:
+					"Use Prisma's tagged template form: `prisma.$queryRaw`SELECT * FROM users WHERE id = ${userId}``. Better still, use the Prisma Client API (prisma.user.findUnique) which always parameterizes.",
+			},
+		},
+		{
+			check: checkHardcodedSecretFallback,
+			finding: {
+				ruleId: "SECRET-FALLBACK",
+				severity: "critical",
+				title: "Environment Variable With Hardcoded Fallback Secret",
+				description:
+					"`process.env.X || 'long-string-literal'` provides a real-looking secret as a fallback. If the env var is unset in production (typo, missing .env), the app silently uses the hardcoded secret — which is now in the repo (CWE-798, CWE-547).",
+				remediation:
+					"Fail fast when a secret is missing: `if (!process.env.X) throw new Error('X is required')`. Never provide a default that looks like a real key.",
+			},
+		},
+		{
+			check: checkMutatingRouteWithoutCsrf,
+			finding: {
+				ruleId: "CSRF-MISSING",
+				severity: "high",
+				title: "State-Changing Handler Without CSRF Defense (CSRF Cheat Sheet)",
+				description:
+					"POST/PUT/PATCH/DELETE handler has no CSRF token check, no SameSite cookie enforcement, and no Origin/Referer validation. A malicious cross-origin page can trigger state changes on behalf of the logged-in user (CWE-352).",
+				remediation:
+					"Add a CSRF token check (double-submit cookie or synchronizer pattern), enforce SameSite=Strict/Lax on session cookies, and validate Origin/Referer against an allowlist.",
+			},
+		},
+	];
+
+	for (const owasp of owaspFileChecks) {
+		if (owasp.check(content, filePath)) {
+			findings.push({
+				id: `${owasp.finding.ruleId}-${findings.length}`,
+				...owasp.finding,
+				filePath,
+			});
+		}
 	}
 
 	for (const rule of GITHUB_SCANNER_RULES) {
