@@ -1,3 +1,5 @@
+import { scoreFinding } from "../risk-score";
+
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 
 export interface Finding {
@@ -10,6 +12,8 @@ export interface Finding {
 	lineNumber?: number;
 	snippet?: string;
 	remediation: string;
+	score?: number;
+	riskFactors?: string[];
 }
 
 export interface ScanRule {
@@ -753,13 +757,13 @@ export const GITHUB_SCANNER_RULES: ScanRule[] = [
 	{
 		id: "LOVABLE002",
 		pattern:
-			/app[/.\\]api[/.\\][^\n]{0,100}route\.(?:ts|tsx|js|jsx)[^\n]{0,200}?(?:supabase\.from|db\.|prisma\.)[^\n]{0,100}?(?!session|auth|getUser|verify|checkAuth)/gi,
+			/export\s+(?:async\s+)?function\s+(?:GET|POST|PUT|DELETE|PATCH)\s*\([^)]*\)\s*\{(?![\s\S]{0,2500}?(?:auth\.getUser|getServerSession|getSession|verifyToken|cookies\(\)\.|authorize|requireAuth|clerkClient|locals\.user|event\.locals\.user))[\s\S]{0,2500}?(?:supabase\.from|db\.[a-zA-Z_]|prisma\.[a-zA-Z_]+|prisma\.\$queryRaw|sql\`)/i,
 		severity: "high",
-		title: "Lovable App: Unprotected API Route",
+		title: "AI-Generated: Handler Accesses DB Without Auth Check",
 		description:
-			"API route in a Lovable app accesses the database without authentication check. AI-generated Next.js apps often leave API routes unprotected, allowing unauthenticated access to user data (OWASP A01:2021).",
+			"API route handler (Lovable, Cursor, v0, Bolt-generated, etc.) calls the database but no auth.getUser/session/cookie verification appears in the handler body. AI coding tools frequently scaffold CRUD handlers and forget to gate them on authentication, exposing user data cross-tenant (OWASP A01:2021, CWE-862).",
 		remediation:
-			"Add session verification to all API routes: const session = await getSession(req). If (!session) return 401. Use middleware to protect routes that access user-specific data.",
+			"Verify auth at the top of every handler: const { data: { user } } = await supabase.auth.getUser(); if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });. Use Next.js middleware.ts to protect sensitive route prefixes (e.g., /api/account/**).",
 	},
 
 	// ============== BOLT-SPECIFIC RULES ==============
@@ -817,13 +821,13 @@ export const GITHUB_SCANNER_RULES: ScanRule[] = [
 	{
 		id: "V0001",
 		pattern:
-			/dangerouslySetInnerHTML[\s\S]{0,300}?(?:\{|\()[^\n]{0,100}?(?!DOMPurify|sanitize|xss|he\.escape)/gi,
+			/dangerouslySetInnerHTML(?![\s\S]{0,1000}?(?:DOMPurify|sanitize-html|xss(?:\.|\()|he\.escape|validator\.escape|escape-html|sanitizeHtml|browserSanitizer|rehype-sanitize))[\s\S]{0,500}?(?:\{|\()/i,
 		severity: "high",
-		title: "v0 App: dangerouslySetInnerHTML Without Sanitization",
+		title: "dangerouslySetInnerHTML Without Sanitization",
 		description:
-			"dangerouslySetInnerHTML used without DOMPurify.sanitize() or equivalent sanitization. v0-generated React apps often render raw HTML from user input or API responses without proper sanitization, enabling XSS attacks (CWE-79, OWASP A03:2021).",
+			"dangerouslySetInnerHTML is being set with content that has not been passed through DOMPurify.sanitize(), sanitize-html, xss, he.escape, validator.escape, or another HTML sanitizer. v0, Bolt, Cursor, and Lovable all commonly render AI-generated HTML or API-returned HTML directly into the DOM, enabling XSS (CWE-79, OWASP A03:2021).",
 		remediation:
-			"Always sanitize before rendering: import DOMPurify from dompurify; const clean = DOMPurify.sanitize(dirtyHTML); <div dangerouslySetInnerHTML={{__html: clean}} />. Never pass unsanitized user input to dangerouslySetInnerHTML.",
+			"Always sanitize before rendering: import DOMPurify from 'dompurify'; const clean = DOMPurify.sanitize(dirtyHTML); <div dangerouslySetInnerHTML={{ __html: clean }} />. Never pass unsanitized user input or AI-generated HTML to dangerouslySetInnerHTML.",
 	},
 	{
 		id: "V0002",
@@ -861,307 +865,77 @@ export const GITHUB_SCANNER_RULES: ScanRule[] = [
 		remediation:
 			"Add auth middleware to Express routes: const authMiddleware = require(./middleware/auth); app.get(/api/data, authMiddleware, handler). Create an auth middleware that validates JWT or session before allowing data access.",
 	},
-];
 
-// Website Scanner Rules
-export interface HeaderRule {
-	id: string;
-	header: string;
-	severity: Severity;
-	title: string;
-	description: string;
-	remediation: string;
-}
+	// ============== VIBECODE-AI: FRAMEWORK-AGNOSTIC RULES ==============
+	// These rules target anti-patterns common across AI coding tools (Cursor, v0,
+	// Lovable, Bolt, Windsurf, Copilot, Replit Agent). They use content heuristics
+	// rather than filename matching so they catch projects regardless of tool.
 
-export const HEADER_CHECKS: HeaderRule[] = [
 	{
-		id: "WEB-001",
-		header: "content-security-policy",
+		id: "VIBECODE-AI-SERVER-ACTION-001",
+		pattern:
+			/['"]use server['"](?![\s\S]{0,3000}?(?:auth\.getUser|getServerSession|getSession|verifyToken|cookies\(\)\.|requireAuth|clerkClient|locals\.user|event\.locals\.user))[\s\S]{0,3000}?(?:prisma\.[a-zA-Z_]+|supabase\.from|db\.[a-zA-Z_]|await\s+prisma|await\s+db\.)/i,
 		severity: "high",
-		title: "Content-Security-Policy Missing",
+		title: "Next.js Server Action Without Auth Check",
 		description:
-			"Content-Security-Policy header is not set. This helps prevent XSS and data injection attacks. CSP is one of the most effective defenses against cross-site scripting (OWASP A05:2025 - Security Misconfiguration).",
+			"A file marked with 'use server' (Next.js Server Action) reads from the database or fetches with environment secrets but no auth verification appears in the action body. AI coding tools love to scaffold server actions that mutate user data without checking ownership (OWASP A01:2021, CWE-862).",
 		remediation:
-			"Add a CSP header: Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{random}'; object-src 'none'; base-uri 'self'. Start with Content-Security-Policy-Report-Only in monitoring mode before enforcing.",
+			"Start every server action with: const { data: { user } } = await supabase.auth.getUser(); if (!user) throw new Error('Unauthorized');. Then check that the resource being mutated belongs to user.id before writing. Never trust the client-supplied id field.",
 	},
 	{
-		id: "WEB-002",
-		header: "strict-transport-security",
+		id: "VIBECODE-AI-SECRET-CLIENT-001",
+		pattern:
+			/(?:NEXT_PUBLIC_|VITE_|REACT_APP_|VITE_PUBLIC_|PUBLIC_)([A-Z][A-Z0-9_]*(?:KEY|SECRET|TOKEN|PASSWORD|API_KEY|ACCESS_TOKEN|PRIVATE_KEY|AUTH))\s*[:=]\s*['"](?:sk_live_|pk_live_|sk_test_|pk_test_|sk-|pk-|gho_|ghp_|ghu_|ghr_|AIza[0-9A-Za-z_-]{20,}|xai-[A-Za-z0-9]{20,}|sk-ant-[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|[A-Fa-f0-9]{32,})/i,
+		severity: "critical",
+		title: "Secret Exposed in Client-Side Env Variable",
+		description:
+			"An env variable prefixed NEXT_PUBLIC_/VITE_/REACT_APP_/PUBLIC_ contains a value that looks like a secret (Stripe key, GitHub token, OpenAI/Anthropic/xAI key, JWT, or long hex/base64). Anything in these prefixes is bundled into the client and is fully extractable by anyone visiting the site. Vibe-coding tools frequently put real secrets here because they reach for the first working variable (CWE-798, OWASP A07:2021).",
+		remediation:
+			"Move the secret to a server-only env variable (no public prefix). In Next.js: drop the NEXT_PUBLIC_ prefix and read with process.env.NAME server-side only. In Vite/SvelteKit: use import.meta.env (server) or $env/static/private. Never expose API keys to the browser.",
+	},
+	{
+		id: "VIBECODE-AI-LOW-EFFORT-001",
+		pattern:
+			/(?:\/\/|\/\*|<!--)\s*(?:TODO|FIXME|XXX|HACK)\s*(?::|-)?\s*(?:\badd\s+auth\b|\bsecurity\b|\bauth\b|\bauthenticate\b|\bprotect\b|\brate.?limit\b|\bvalidate\b|\binput.?validation\b|\bsanitize\b|\bcsp\b|\bcsrf\b|\bencrypt\b|\bhash\b|\bpassword\b)/i,
 		severity: "high",
-		title: "HSTS Header Missing",
+		title: "Security TODO/FIXME Left in Code",
 		description:
-			"Strict-Transport-Security header is not set. Browsers won't enforce HTTPS, leaving users vulnerable to protocol downgrade attacks.",
+			"A TODO/FIXME/XXX/HACK comment in code references auth, security, validation, sanitization, rate limiting, encryption, or password handling. Vibe-coding tools ship these comments as placeholders the user rarely addresses (CWE-546, OWASP A05:2025).",
 		remediation:
-			"Add HSTS header: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
+			"Treat every security TODO as a finding, not a future task. Either implement the security control before merging, or open a tracked ticket with a deadline and do not deploy to production with the TODO unresolved.",
 	},
 	{
-		id: "WEB-003",
-		header: "x-frame-options",
+		id: "VIBECODE-AI-INPUT-001",
+		pattern:
+			/(?:prisma\.\$queryRaw|sql\.query|sequelize\.query|knex\.raw|connection\.query|client\.query|pool\.query)[\s\S]{0,200}?\$\{[^}]+\}/i,
+		severity: "critical",
+		title: "Raw SQL Query With Interpolated Variable",
+		description:
+			"A raw SQL query uses template-string interpolation (${var}) to splice a value into the statement instead of parameter binding ($1, ?, :name). This is classic SQL injection waiting to happen. AI coding tools assemble raw queries from user input because the prompt said 'look up user by id' without specifying parameterization (CWE-89, OWASP A03:2021).",
+		remediation:
+			"Use parameterized queries: prisma.$queryRaw`SELECT * FROM users WHERE id = ${userId}` (Prisma tagged template binds ${} safely). For other drivers, use bound parameters (pg: client.query('... WHERE id = $1', [id])). Never concatenate or template-interpolate user input into a SQL string.",
+	},
+	{
+		id: "VIBECODE-AI-DEBUG-001",
+		pattern:
+			/console\.(?:log|debug|info|warn|table|dir)\s*\([^)]*(?:req\.body|request\.body|req\.headers|req\.cookies|req\.params|req\.query|body|password|token|secret|api[_-]?key|session|csrf|cookie)/i,
+		severity: "high",
+		title: "Sensitive Data Logged via console.*",
+		description:
+			"console.log/debug/info/warn/table/dir is being called with arguments that look like request bodies, passwords, tokens, secrets, API keys, sessions, CSRF tokens, or cookies. Vibe-coded handlers sprinkle logging to debug and ship them to production, where logs end up in Datadog/Sentry/CloudWatch and become a credential leak vector (CWE-532, OWASP A09:2021).",
+		remediation:
+			"Remove all console.* statements that log request data or secrets before deploying. If you need server-side observability, use a structured logger (pino/winston) with explicit field allowlists, and never log raw request bodies, tokens, or passwords.",
+	},
+	{
+		id: "VIBECODE-AI-RATE-LIMIT-001",
+		pattern:
+			/(?:router|app)\.(?:post|put|delete|patch)\s*\(\s*['"]\/(?:api\/)?(?:login|signin|signup|register|forgot.?password|reset.?password|verify.?email|change.?password|auth\/)/i,
 		severity: "medium",
-		title: "X-Frame-Options Missing",
+		title: "Auth Route Without Detectable Rate Limit",
 		description:
-			"X-Frame-Options header is not set. Site may be vulnerable to clickjacking attacks where an attacker embeds the page in an iframe.",
+			"An authentication route (login, signup, password reset, etc.) is defined without any visible rate-limit, throttle, captcha, or attempt-limiting helper in the same file. Vibe-coded auth routes are unprotected by default, enabling credential stuffing and brute-force attacks (CWE-307, OWASP A04:2021).",
 		remediation:
-			"Add X-Frame-Options: DENY or X-Frame-Options: SAMEORIGIN. Consider using CSP frame-ancestors directive for broader browser support.",
-	},
-	{
-		id: "WEB-004",
-		header: "x-content-type-options",
-		severity: "medium",
-		title: "X-Content-Type-Options Missing (MIME Sniffing Enabled)",
-		description:
-			"X-Content-Type-Options header is not set. Browsers may MIME-sniff the response and execute content even when it's not the declared type, enabling XSS attacks via uploaded files (OWASP A05:2025).",
-		remediation:
-			"Add X-Content-Type-Options: nosniff to prevent browsers from MIME-sniffing responses away from the declared Content-Type.",
-	},
-	{
-		id: "WEB-005",
-		header: "referrer-policy",
-		severity: "low",
-		title: "Referrer-Policy Header Missing",
-		description:
-			"Referrer-Policy header is not set. The Referer header may leak sensitive URL information (URL parameters, path fragments) to external sites.",
-		remediation:
-			"Add Referrer-Policy: strict-origin-when-cross-origin or Referrer-Policy: no-referrer to control what information is sent with the Referer header.",
-	},
-	{
-		id: "WEB-006",
-		header: "permissions-policy",
-		severity: "low",
-		title: "Permissions-Policy Header Missing",
-		description:
-			"Permissions-Policy (formerly Feature-Policy) header is not set. Unused browser features like camera, microphone, geolocation, or payment handler may be exploitable by attackers.",
-		remediation:
-			"Add Permissions-Policy header to disable unused features: Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()",
-	},
-	{
-		id: "WEB-007",
-		header: "x-powered-by",
-		severity: "low",
-		title: "X-Powered-By Header Discloses Technology Stack",
-		description:
-			"X-Powered-By header reveals the server technology (e.g., Express, PHP, ASP.NET). Attackers use this to target known vulnerabilities for specific frameworks.",
-		remediation:
-			"Remove the X-Powered-By header or set it to a generic value. In Express: app.disable('x-powered-by'). In IIS: remove the header via web.config.",
-	},
-	{
-		id: "WEB-008",
-		header: "server",
-		severity: "low",
-		title: "Server Header Discloses Version Information",
-		description:
-			"Server header reveals the web server name and version (e.g., Apache/2.4.52, nginx/1.18.0). Attackers use this to identify known vulnerabilities for specific server versions.",
-		remediation:
-			"Configure your web server to suppress or genericize the Server header. In nginx: server_tokens off; In Apache: ServerTokens Prod",
-	},
-	{
-		id: "WEB-009",
-		header: "rate-limiting",
-		severity: "medium",
-		title: "Rate Limiting Headers Missing",
-		description:
-			"No rate limiting headers detected (X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After). Without rate limiting, APIs and login endpoints are vulnerable to brute force attacks.",
-		remediation:
-			"Implement rate limiting on sensitive endpoints. Return headers like X-RateLimit-Limit: 100, X-RateLimit-Remaining: 95, and Retry-After for 429 responses.",
-	},
-	{
-		id: "WEB-010",
-		header: "cross-origin-opener-policy",
-		severity: "medium",
-		title: "Cross-Origin-Opener-Policy (COOP) Header Missing",
-		description:
-			"COOP header is not set. Without COOP, your page can be opened by cross-origin documents in the same browsing context group, enabling Spectre-style speculative execution attacks (OWASP A05:2025).",
-		remediation:
-			"Add Cross-Origin-Opener-Policy: same-origin to isolate your browsing context from cross-origin documents.",
-	},
-	{
-		id: "WEB-011",
-		header: "cross-origin-resource-policy",
-		severity: "medium",
-		title: "Cross-Origin-Resource-Policy (CORP) Header Missing",
-		description:
-			"CORP header is not set. Without CORP, your resources can be loaded by other origins, enabling clickjacking, timing attacks, and data theft (OWASP A05:2025).",
-		remediation:
-			"Add Cross-Origin-Resource-Policy: same-origin (or cross-origin if you need to allow embedding).",
-	},
-	{
-		id: "WEB-012",
-		header: "cross-origin-embedder-policy",
-		severity: "low",
-		title: "Cross-Origin-Embedder-Policy (COEP) Header Missing",
-		description:
-			"COEP header is not set. Without COEP, cross-origin resources without explicit permission cannot be embedded, blocking access to features like SharedArrayBuffer, performance.measureMemory, and otp-credentials (OWASP A05:2025).",
-		remediation:
-			"Add Cross-Origin-Embedder-Policy: require-corp if you need cross-origin isolation for features like SharedArrayBuffer.",
-	},
-];
-
-export const PATH_CHECKS = [
-	{
-		path: "/.env",
-		severity: "critical" as Severity,
-		title: ".env File Accessible",
-		remediation:
-			"Block access to .env files in web server config. Ensure .env is never in the public document root.",
-	},
-	{
-		path: "/.env.local",
-		severity: "critical" as Severity,
-		title: ".env.local File Accessible",
-		remediation:
-			"Block access to .env.local files. These contain machine-specific overrides and may have more secrets than .env.",
-	},
-	{
-		path: "/.env.development",
-		severity: "high" as Severity,
-		title: ".env.development File Accessible",
-		remediation:
-			"Block access to .env.development files. Development env files may contain debug flags and dev-only credentials.",
-	},
-	{
-		path: "/.git/config",
-		severity: "critical" as Severity,
-		title: ".git/config Accessible (CWE-552)",
-		remediation:
-			'Block access to the entire .git directory. Attackers can download full source code from .git/config if publicly accessible. Nginx: location ~ /.git { deny all; } Apache: <Directory ~ ".git"> Require all denied </Directory>',
-	},
-	{
-		path: "/.git/HEAD",
-		severity: "critical" as Severity,
-		title: ".git/HEAD Accessible",
-		remediation:
-			"Block access to .git/HEAD which reveals branch names and commit refs.",
-	},
-	{
-		path: "/.git",
-		severity: "critical" as Severity,
-		title: ".git Directory Fully Accessible",
-		remediation:
-			"The entire .git directory must be blocked. It contains history, commits, and potentially sensitive config.",
-	},
-	{
-		path: "/config.yml",
-		severity: "high" as Severity,
-		title: "config.yml Exposed",
-		remediation:
-			"Block access to config.yml. Configuration files may contain database credentials, API keys, or infrastructure secrets.",
-	},
-	{
-		path: "/config.yaml",
-		severity: "high" as Severity,
-		title: "config.yaml Exposed",
-		remediation: "Block access to config.yaml files.",
-	},
-	{
-		path: "/config.json",
-		severity: "high" as Severity,
-		title: "config.json Exposed",
-		remediation:
-			"Block access to config.json. Do not serve config files from the public document root.",
-	},
-	{
-		path: "/admin",
-		severity: "high" as Severity,
-		title: "Admin Panel Exposed",
-		remediation:
-			"Protect admin routes with strong authentication, rate limiting, and IP allowlisting. Add to robots.txt to discourage indexing.",
-	},
-	{
-		path: "/wp-admin",
-		severity: "high" as Severity,
-		title: "WordPress Admin Exposed",
-		remediation:
-			"Protect WordPress admin with strong authentication, 2FA, and security plugins. Consider hiding wp-admin behind a VPN.",
-	},
-	{
-		path: "/debug",
-		severity: "critical" as Severity,
-		title: "Debug Endpoints Exposed (OWASP A10:2025)",
-		remediation:
-			"Disable debug mode in production. Debug endpoints leak stack traces, environment variables, and internal state. Remove /debug, /trace, /actuator routes from production.",
-	},
-	{
-		path: "/api/debug",
-		severity: "critical" as Severity,
-		title: "API Debug Endpoint Exposed (OWASP A10:2025)",
-		remediation:
-			"Remove all debug API endpoints from production. Debug endpoints are a primary target for information disclosure attacks.",
-	},
-	{
-		path: "/actuator/health",
-		severity: "medium" as Severity,
-		title: "Spring Boot Actuator Health Exposed",
-		remediation:
-			"Restrict /actuator to internal networks only. Do not expose /actuator/env, /actuator/heapdump, or /actuator/loggers in production.",
-	},
-	{
-		path: "/actuator",
-		severity: "high" as Severity,
-		title: "Spring Boot Actuator Fully Exposed",
-		remediation:
-			"Restrict all actuator endpoints to internal networks. Use Spring Security to protect actuator with authentication.",
-	},
-	{
-		path: "/trace",
-		severity: "high" as Severity,
-		title: "Trace Endpoint Exposed",
-		remediation:
-			"Remove trace/debug endpoints. HTTP TRACE method and /trace routes expose request headers and internal routing.",
-	},
-	{
-		path: "/.aws/credentials",
-		severity: "critical" as Severity,
-		title: "AWS Credentials File Exposed",
-		remediation:
-			"Never place AWS credentials in web-accessible directories. Use IAM roles, environment variables, or AWS Secrets Manager instead.",
-	},
-	{
-		path: "/id_rsa",
-		severity: "critical" as Severity,
-		title: "SSH Private Key Exposed",
-		remediation:
-			"Never place private keys in web directories. Use SSH agent forwarding or secret management systems.",
-	},
-	{
-		path: "/backup",
-		severity: "high" as Severity,
-		title: "Backup Directory Exposed",
-		remediation:
-			"Block access to backup directories. Backups may contain full application state and data.",
-	},
-	{
-		path: "/.svn",
-		severity: "high" as Severity,
-		title: "Subversion (.svn) Directory Exposed",
-		remediation:
-			"Block access to .svn directories. Like .git, these expose version control history.",
-	},
-	{
-		path: "/.hg",
-		severity: "high" as Severity,
-		title: "Mercurial (.hg) Directory Exposed",
-		remediation: "Block access to .hg directories.",
-	},
-	{
-		path: "/phpinfo.php",
-		severity: "high" as Severity,
-		title: "phpinfo() Page Exposed",
-		remediation:
-			"Remove phpinfo.php from production. phpinfo() reveals PHP version, extensions, paths, and server configuration.",
-	},
-	{
-		path: "/server-status",
-		severity: "medium" as Severity,
-		title: "Apache Server Status Exposed",
-		remediation:
-			"Disable Apache mod_status or restrict it to localhost. Server status pages leak server details and traffic patterns.",
-	},
-	{
-		path: "/.well-known/security.txt",
-		severity: "low" as Severity,
-		title: "security.txt Found",
-		remediation:
-			"This is expected and recommended. Ensure the security.txt contact information is correct and the file is properly formatted.",
+			"Apply rate limiting at the route or middleware level: rateLimit({ windowMs: 15*60*1000, max: 5 }) on /login, /signup, /forgot-password. Combine with CAPTCHA on /login after N failed attempts. Use middleware.ts to apply limits across all /api/auth/** routes.",
 	},
 ];
 
@@ -1169,12 +943,20 @@ export function scanContent(content: string, filePath: string): Finding[] {
 	const findings: Finding[] = [];
 	const lines = content.split("\n");
 
+	function scoreAndPush(base: Omit<Finding, "score" | "riskFactors">, snippetOverride?: string): void {
+		const { score, riskFactors } = scoreFinding(
+			{ ...base, snippet: base.snippet ?? snippetOverride },
+			{ content, filePath, snippet: base.snippet ?? snippetOverride },
+		);
+		findings.push({ ...base, snippet: base.snippet ?? snippetOverride, score, riskFactors });
+	}
+
 	// Run Supabase RLS checks
 	findings.push(...checkSupabaseRLS(content, filePath));
 
 	// Run Supabase credential check (requires file path context)
 	if (checkSupabaseCredentials(content, filePath)) {
-		findings.push({
+		scoreAndPush({
 			id: `SUPABASE001-${findings.length}`,
 			ruleId: "SUPABASE001",
 			severity: "critical",
@@ -1364,7 +1146,7 @@ export function scanContent(content: string, filePath: string): Finding[] {
 
 	for (const owasp of owaspFileChecks) {
 		if (owasp.check(content, filePath)) {
-			findings.push({
+			scoreAndPush({
 				id: `${owasp.finding.ruleId}-${findings.length}`,
 				...owasp.finding,
 				filePath,
@@ -1403,6 +1185,20 @@ export function scanContent(content: string, filePath: string): Finding[] {
 					lineNumber,
 					snippet,
 					remediation: rule.remediation,
+					...scoreFinding(
+						{
+							id: `${rule.id}-${findings.length}`,
+							ruleId: rule.id,
+							severity: rule.severity,
+							title: rule.title,
+							description: rule.description,
+							filePath,
+							lineNumber,
+							snippet,
+							remediation: rule.remediation,
+						},
+						{ content, filePath, snippet },
+					),
 				});
 			}
 		}

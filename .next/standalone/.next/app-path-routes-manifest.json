@@ -1,0 +1,12 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/scan/[id]/route": "/api/scan/[id]",
+  "/api/scan/github/route": "/api/scan/github",
+  "/api/scan/route": "/api/scan",
+  "/api/scan/website/route": "/api/scan/website",
+  "/api/scans/history/route": "/api/scans/history",
+  "/api/stats/route": "/api/stats",
+  "/api/webhooks/github/route": "/api/webhooks/github",
+  "/page": "/"
+}

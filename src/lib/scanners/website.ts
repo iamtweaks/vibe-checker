@@ -1,6 +1,9 @@
 import * as cheerio from 'cheerio'
 import type { WebsiteScanResult, Finding, SeverityCounts, Severity } from '../types'
 import { fetchPublicHtml } from '../network-security'
+import { analyzeHeaders } from './headers'
+import { runPathProbes } from './path-probe'
+import { scoreFinding } from './risk-score'
 
 // ============== Type Definitions ==============
 
@@ -9,7 +12,7 @@ interface SecurityCheck {
   title: string
   description: string
   severity: Severity
-  check: ($: cheerio.CheerioAPI, url: string, headers: Record<string, string>) => boolean
+  check: ($: cheerio.CheerioAPI, url: string) => boolean
   remediation: string
   cwe?: string
   owasp?: string
@@ -40,19 +43,12 @@ function safeCheck(checkFn: () => boolean): boolean {
 }
 
 /**
- * Count occurrences of items matching a predicate
- */
-function countOccurrences<T>(items: T[], predicate: (item: T) => boolean): number {
-  return items.filter(predicate).length
-}
-
-/**
  * Convert headers record to lowercase keys for case-insensitive lookup
  */
 function normalizeHeaders(headers: Headers): Record<string, string> {
   const normalized: Record<string, string> = {}
   headers.forEach((value, key) => {
-    normalized[key.toLowerCase()] = value.toLowerCase()
+    normalized[key.toLowerCase()] = value
   })
   return normalized
 }
@@ -67,7 +63,7 @@ function initSeverityCounts(): SeverityCounts {
 /**
  * Build a Finding object
  */
-function buildFinding(check: SecurityCheck, index: number): Finding {
+function buildFinding(check: SecurityCheck): Finding {
   return {
     id: crypto.randomUUID(),
     ruleId: check.owasp ? check.owasp.split(':')[0] : check.id.toUpperCase(),
@@ -80,7 +76,9 @@ function buildFinding(check: SecurityCheck, index: number): Finding {
 
 // ============== Security Checks ==============
 
-// OWASP Top 10 2021 aligned checks
+// HTML body + URL pattern checks. Header-related checks are handled by analyzeHeaders()
+// in ./headers.ts and path-exposure checks are handled by runPathProbes() in
+// ./path-probe.ts. Keeping them in one place avoids duplication.
 const SECURITY_CHECKS: SecurityCheck[] = [
   // A01 - Broken Access Control
   {
@@ -113,19 +111,6 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     },
     remediation: 'Sanitize and validate all user input. Use indirect references instead of direct file paths.',
   },
-  {
-    id: 'cors-misconfig',
-    title: 'Potential CORS Misconfiguration',
-    description: 'Page may be vulnerable to CORS attacks with overly permissive settings.',
-    severity: 'high',
-    cwe: 'CWE-942',
-    owasp: 'A01:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      const corsHeader = headers['access-control-allow-origin'] || ''
-      return corsHeader === '*' || corsHeader === 'null'
-    },
-    remediation: 'Set Access-Control-Allow-Origin to specific trusted origins. Do not use * or null in production.',
-  },
 
   // A02 - Cryptographic Failures
   {
@@ -152,19 +137,6 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     },
     remediation: 'Update all resource URLs to use HTTPS. Configure CSP to block mixed content.',
   },
-  {
-    id: 'weak-ssl',
-    title: 'Weak or Missing SSL/TLS Configuration',
-    description: 'Server may be using outdated protocols or weak cipher suites.',
-    severity: 'high',
-    cwe: 'CWE-326',
-    owasp: 'A02:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      const sslHeader = headers['strict-transport-security'] || ''
-      return sslHeader.length === 0
-    },
-    remediation: 'Enable HSTS with a long max-age. Ensure TLS 1.2+ is configured. Remove support for older protocols.',
-  },
 
   // A03 - Injection
   {
@@ -174,13 +146,13 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'critical',
     cwe: 'CWE-79',
     owasp: 'A03:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       const inputs = $('input, textarea, select').filter((_, el) => {
         const type = $(el).attr('type')
         const name = $(el).attr('name') || ''
         const id = $(el).attr('id') || ''
         const textField = type !== 'hidden' && type !== 'submit' && type !== 'button'
-        const sensitiveField = /comment|message|post|content|body|description/i.test(name) || 
+        const sensitiveField = /comment|message|post|content|body|description/i.test(name) ||
                               /comment|message|post|content|body|description/i.test(id)
         return textField && sensitiveField
       })
@@ -215,7 +187,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'high',
     cwe: 'CWE-79',
     owasp: 'A03:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       const scripts = $('script').map((_, el) => $(el).html()).get().join('')
       const dangerousPatterns = [
         /document\.write/i,
@@ -224,7 +196,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
         /insertAdjacentHTML/i,
         /\.href\s*=\s*location/i,
         /eval\s*\(/i,
-        /setTimeout\s*\(\s*["']/, 
+        /setTimeout\s*\(\s*["']/,
         /setInterval\s*\(\s*["']/,
       ]
       return dangerousPatterns.some(p => p.test(scripts))
@@ -245,7 +217,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
       if (!params) return false
       const riskyParams = ['id', 'user', 'query', 'search', 'page', 'sort', 'order', 'filter', 'cat']
       const bodyText = $('body').text().toLowerCase()
-      return riskyParams.some(p => urlObj.searchParams.has(p)) && 
+      return riskyParams.some(p => urlObj.searchParams.has(p)) &&
              (url.includes("'") || url.includes('"') || /union.*select/i.test(bodyText))
     },
     remediation: 'Use parameterized queries. Never concatenate user input into SQL strings.',
@@ -275,9 +247,9 @@ const SECURITY_CHECKS: SecurityCheck[] = [
       const urlObj = safeParseUrl(url)
       if (!urlObj) return false
       const params = urlObj.searchParams.toString()
-      return (urlObj.pathname.includes('ldap') || /ldap/i.test(params)) && /(\*|\(|\||\&)/.test(params)
+      return /[*(\|&=]/.test(params) && /(ldap|dn|cn|uid)/i.test(urlObj.pathname)
     },
-    remediation: 'Sanitize all DN special characters. Use LDAP encoding functions.',
+    remediation: 'Sanitize all LDAP special characters. Use LDAP encoding functions.',
   },
 
   // A04 - Insecure Design
@@ -298,120 +270,6 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     },
     remediation: 'Disable debug mode in production. Remove debug endpoints or restrict access.',
   },
-  {
-    id: 'missing-rate-limit',
-    title: 'Missing Rate Limiting Headers',
-    description: 'No rate limiting headers detected, suggesting no brute force protection.',
-    severity: 'medium',
-    cwe: 'CWE-307',
-    owasp: 'A04:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      const rateHeaders = ['x-ratelimit-limit', 'x-ratelimit-remaining', 'ratelimit-limit']
-      return !rateHeaders.some(h => headers[h.toLowerCase()])
-    },
-    remediation: 'Implement rate limiting. Use headers like X-RateLimit-Limit and Retry-After.',
-  },
-
-  // A05 - Security Misconfiguration
-  {
-    id: 'missing-csp',
-    title: 'Content Security Policy Missing',
-    description: 'No CSP header leaves the application vulnerable to XSS and data injection.',
-    severity: 'high',
-    cwe: 'CWE-1021',
-    owasp: 'A05:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      return !Object.keys(headers).some(h => h.includes('content-security-policy'))
-    },
-    remediation: 'Implement a strict CSP. Start with report-only mode to identify violations.',
-  },
-  {
-    id: 'missing-xfo',
-    title: 'X-Frame-Options Header Missing',
-    description: 'Page can be embedded in iframes, enabling clickjacking attacks.',
-    severity: 'medium',
-    cwe: 'CWE-1021',
-    owasp: 'A05:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      return !Object.keys(headers).some(h => h.includes('x-frame-options'))
-    },
-    remediation: 'Add X-Frame-Options: DENY or SAMEORIGIN header. Consider CSP frame-ancestors.',
-  },
-  {
-    id: 'missing-xct',
-    title: 'X-Content-Type-Options Header Missing',
-    description: 'Browser may MIME-sniff content, enabling attacks.',
-    severity: 'medium',
-    cwe: 'CWE-693',
-    owasp: 'A05:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      return !headers['x-content-type-options']
-    },
-    remediation: 'Add X-Content-Type-Options: nosniff header.',
-  },
-  {
-    id: 'missing-xxp',
-    title: 'X-XSS-Protection Header Missing or Weak',
-    description: 'XSS filter not properly configured.',
-    severity: 'low',
-    cwe: 'CWE-692',
-    owasp: 'A05:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      const header = headers['x-xss-protection'] || ''
-      return header === '' || header === '0' || header === '1'
-    },
-    remediation: 'Use CSP instead for XSS protection. If needed, set X-XSS-Protection: 0 (prefer CSP).',
-  },
-  {
-    id: 'missing-referrer-policy',
-    title: 'Referrer-Policy Header Missing',
-    description: 'Referrer information may leak to external sites.',
-    severity: 'low',
-    cwe: 'CWE-116',
-    owasp: 'A05:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      return !headers['referrer-policy']
-    },
-    remediation: 'Add Referrer-Policy: strict-origin-when-cross-origin or no-referrer.',
-  },
-  {
-    id: 'permissions-policy',
-    title: 'Permissions-Policy Header Missing',
-    description: 'Browser features not restricted, may enable attacks.',
-    severity: 'low',
-    cwe: 'CWE-16',
-    owasp: 'A05:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      return !headers['permissions-policy'] && !headers['feature-policy']
-    },
-    remediation: 'Add Permissions-Policy to disable unused browser features (camera, mic, geolocation, etc).',
-  },
-  {
-    id: 'server-version',
-    title: 'Server Version Information Disclosed',
-    description: 'Server or framework version exposed in headers.',
-    severity: 'low',
-    cwe: 'CWE-200',
-    owasp: 'A05:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      const versionHeaders = ['server', 'x-powered-by', 'x-aspnet-version', 'x-generator']
-      return versionHeaders.some(h => headers[h] && /\d+(\.\d+)+/.test(headers[h]))
-    },
-    remediation: 'Remove or genericize version headers. Hide server technology stack information.',
-  },
-  {
-    id: 'trace-method',
-    title: 'HTTP TRACE Method Enabled',
-    description: 'TRACE method enabled, can be used in Cross-Site Tracing attacks.',
-    severity: 'medium',
-    cwe: 'CWE-74',
-    owasp: 'A05:2021',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      const allow = headers['allow'] || headers['access-control-allow-methods'] || ''
-      return /trace/i.test(allow)
-    },
-    remediation: 'Disable TRACE method at the web server level.',
-  },
 
   // A06 - Vulnerable Components
   {
@@ -421,7 +279,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'medium',
     cwe: 'CWE-1104',
     owasp: 'A06:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       const scripts = $('script[src]').map((_, el) => $(el).attr('src')).get()
       return scripts.some((src: string) => {
         if (!src) return false
@@ -446,7 +304,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'medium',
     cwe: 'CWE-1359',
     owasp: 'A06:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       const scripts = $('script[src]').map((_, el) => $(el).attr('src')).get()
       const knownCdns = ['jquery', 'bootstrap', 'googleapis', 'cloudflare', 'cdnjs', 'unpkg', 'jsdelivr']
       return scripts.filter((src: string) => {
@@ -465,7 +323,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'high',
     cwe: 'CWE-799',
     owasp: 'A07:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       const passwordFields = $('input[type="password"]')
       return passwordFields.filter((_, el) => {
         const autocomplete = $(el).attr('autocomplete')
@@ -481,7 +339,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'high',
     cwe: 'CWE-287',
     owasp: 'A07:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       const sensitiveForms = $('form').filter((_, form) => {
         const text = $(form).text().toLowerCase()
         const hasPassword = /password|passwd|secret/i.test($(form).html() || '')
@@ -502,7 +360,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'medium',
     cwe: 'CWE-345',
     owasp: 'A08:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       const scriptsWithSrc = $('script[src]').filter((_, el) => {
         const src = $(el).attr('src') || ''
         return src.startsWith('http') && !$(el).attr('integrity')
@@ -510,23 +368,6 @@ const SECURITY_CHECKS: SecurityCheck[] = [
       return scriptsWithSrc.length > 0
     },
     remediation: 'Add integrity attribute (SRI) to all external scripts: <script src="..." integrity="sha384-..." crossorigin="anonymous">',
-  },
-  {
-    id: 'sri-not-used',
-    title: 'External Scripts Found Without Integrity Check',
-    description: 'External resources loaded without verification, risk of CDN compromise.',
-    severity: 'medium',
-    cwe: 'CWE-346',
-    owasp: 'A08:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
-      const externalScripts = $('script[src]').filter((_, el) => {
-        const src = $(el).attr('src') || ''
-        return src.startsWith('https://')
-      })
-      const withoutIntegrity = externalScripts.filter((_, el) => !$(el).attr('integrity'))
-      return withoutIntegrity.length > 0
-    },
-    remediation: 'Use Subresource Integrity for all external scripts. Verify CDN credentials.',
   },
 
   // A09 - Logging & Monitoring
@@ -537,7 +378,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'info',
     cwe: 'CWE-778',
     owasp: 'A09:2021',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       return !$('a[href="/security"], a[href="/security.txt"], a[href="/.well-known/security.txt"]').length
     },
     remediation: 'Create a security.txt file at /.well-known/security.txt with contact information.',
@@ -558,24 +399,6 @@ const SECURITY_CHECKS: SecurityCheck[] = [
       return ssrfParams.some(p => urlObj.searchParams.has(p))
     },
     remediation: 'Validate and sanitize all URL parameters. Use allowlists for permitted destinations. Never forward requests to user-controlled URLs.',
-  },
-
-  // OWASP Top 10 2025 - NEW A03: Software Supply Chain Failures
-  {
-    id: 'suspicious-cdn',
-    title: 'Unverified Third-Party Script (Supply Chain Risk)',
-    description: 'External script loaded from an unknown source without Subresource Integrity. Attackers may compromise CDNs to inject malware (OWASP A03:2025).',
-    severity: 'high',
-    cwe: 'CWE-1359',
-    owasp: 'A03:2025',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
-      const scripts = $('script[src]').filter((_, el) => {
-        const src = $(el).attr('src') || ''
-        return src.startsWith('http') && !$(el).attr('integrity')
-      }).length > 0
-      return scripts
-    },
-    remediation: 'Use Subresource Integrity (SRI) for all external scripts. Verify CDN providers. Monitor for supply chain compromises.',
   },
 
   // OWASP Top 10 2025 - NEW A10: Mishandling of Exceptional Conditions
@@ -616,7 +439,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     severity: 'medium',
     cwe: 'CWE-755',
     owasp: 'A10:2025',
-    check: ($: cheerio.CheerioAPI, _url: string) => {
+    check: ($: cheerio.CheerioAPI) => {
       const html = $.html().toLowerCase()
       const hasErrorBoundary = /errorboundary|<errorboundary|componentdidcatch|getderivedstatefromerror/i.test(html)
       const hasReactApp = /data-react|/i.test(html) || $('script[src*="react"]').length > 0
@@ -624,57 +447,8 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     },
     remediation: 'Implement React ErrorBoundary components to catch and handle render errors gracefully. Use componentDidCatch or getDerivedStateFromError. This prevents app crashes from exposing error details.',
   },
-  {
-    id: 'missing-coop',
-    title: 'Cross-Origin-Opener-Policy (COOP) Header Missing (OWASP A05:2025)',
-    description: 'COOP header not set. Without COOP, your page can be opened by cross-origin documents in the same browsing context group, enabling Spectre-style attacks.',
-    severity: 'medium',
-    cwe: 'CWE-1021',
-    owasp: 'A05:2025',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      return !headers['cross-origin-opener-policy']
-    },
-    remediation: 'Add Cross-Origin-Opener-Policy: same-origin header to prevent cross-origin documents from accessing your window.',
-  },
-  {
-    id: 'missing-corp',
-    title: 'Cross-Origin-Resource-Policy (CORP) Header Missing (OWASP A05:2025)',
-    description: 'CORP header not set. Without CORP, your resources can be loaded by other origins, enabling clickjacking and data theft.',
-    severity: 'medium',
-    cwe: 'CWE-1021',
-    owasp: 'A05:2025',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      return !headers['cross-origin-resource-policy'] && !headers['cross-origin-resource-policy']
-    },
-    remediation: 'Add Cross-Origin-Resource-Policy: same-origin or cross-origin header based on your resource loading needs.',
-  },
-  {
-    id: 'missing-coep',
-    title: 'Cross-Origin-Embedder-Policy (COEP) Header Missing (OWASP A05:2025)',
-    description: 'COEP header not set. Without COEP, cross-origin resources without CORP/COOP headers can be embedded, blocking access to features like SharedArrayBuffer.',
-    severity: 'low',
-    cwe: 'CWE-1021',
-    owasp: 'A05:2025',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      return !headers['cross-origin-embedder-policy']
-    },
-    remediation: 'Add Cross-Origin-Embedder-Policy: require-corp header if you need cross-origin isolation (required for SharedArrayBuffer, performance.measureMemory).',
-  },
-  {
-    id: 'permissions-policy-weak',
-    title: 'Weak Permissions-Policy Header (OWASP A05:2025)',
-    description: 'Permissions-Policy is either missing or allows risky browser features. Unused features like camera, microphone, or geolocation should be disabled.',
-    severity: 'low',
-    cwe: 'CWE-16',
-    owasp: 'A05:2025',
-    check: ($: cheerio.CheerioAPI, _url: string, headers: Record<string, string>) => {
-      const pp = headers['permissions-policy'] || headers['feature-policy'] || ''
-      if (!pp) return true
-      const riskyPerms = ['camera=(', 'microphone=(', 'geolocation=(', 'gyroscope=(', 'magnetometer=(']
-      return riskyPerms.some(p => pp.includes(p + '"') || pp.includes(p + '\'')) || pp.includes('*')
-    },
-    remediation: 'Set Permissions-Policy to disable unused browser features: Permissions-Policy: camera=(), microphone=(), geolocation=(), gyroscope=(), magnetometer=()',
-  },
+
+  // OWASP Top 10 2025 - NEW A10: Fail-Open Conditions
   {
     id: 'fail-open',
     title: 'Potential Fail-Open Condition (OWASP A10:2025)',
@@ -698,7 +472,7 @@ export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
   const findings: Finding[] = []
   const startTime = Date.now()
   let headers: Record<string, string> = {}
-  
+
   // Validate URL before attempting fetch
   const urlObj = safeParseUrl(url)
   if (!urlObj) {
@@ -708,19 +482,29 @@ export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
   try {
     const { finalUrl, html, headers: responseHeaders } = await fetchPublicHtml(url)
 
-    // Extract headers with normalization
     headers = normalizeHeaders(responseHeaders)
+    const finalUrlObj = safeParseUrl(finalUrl) ?? urlObj
 
     const $ = cheerio.load(html)
 
-    // Run all checks with error isolation
-    for (let i = 0; i < SECURITY_CHECKS.length; i++) {
-      const check = SECURITY_CHECKS[i]
-      const isTriggered = safeCheck(() => check.check($, finalUrl, headers))
-
+    // 1) HTML body + URL pattern checks
+    for (const check of SECURITY_CHECKS) {
+      const isTriggered = safeCheck(() => check.check($, finalUrl))
       if (isTriggered) {
-        findings.push(buildFinding(check, findings.length))
+        const finding = buildFinding(check)
+        const scored = scoreFinding(finding, { filePath: finalUrl, snippet: finding.snippet })
+        findings.push({ ...finding, ...scored })
       }
+    }
+
+    // 2) HTTP header misconfiguration checks
+    try {
+      const headerFindings = analyzeHeaders(headers)
+      for (const f of headerFindings) {
+        findings.push({ ...f, ...scoreFinding(f, { filePath: finalUrl }) })
+      }
+    } catch (headerError) {
+      console.error('Header analysis failed:', headerError)
     }
   } catch (error: any) {
     if (error.name === 'TimeoutError') {
@@ -728,7 +512,13 @@ export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
     }
     throw new Error(`Failed to fetch website: ${error.message}`)
   }
-  
+
+  // 3) Sensitive-path exposure probes (parallel, capped, isolated per-probe)
+  const pathFindings = await runPathProbes(urlObj)
+  for (const f of pathFindings) {
+    findings.push({ ...f, ...scoreFinding(f, { filePath: urlObj.toString() }) })
+  }
+
   // Calculate severity counts
   const severityCounts = initSeverityCounts()
   for (const f of findings) {
@@ -736,7 +526,7 @@ export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
       severityCounts[f.severity]++
     }
   }
-  
+
   return {
     findings,
     severityCounts,

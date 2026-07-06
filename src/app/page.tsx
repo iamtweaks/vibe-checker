@@ -20,6 +20,8 @@ import {
 	Copy,
 	Check,
 	Users,
+	X,
+	ChevronRight,
 } from "lucide-react";
 import { downloadPDF } from "@/lib/pdf";
 import type { Severity, Finding } from "@/lib/types";
@@ -83,6 +85,18 @@ function SeverityBadge({ severity }: { severity: Severity }) {
 			{severity.charAt(0).toUpperCase() + severity.slice(1)}
 		</span>
 	);
+}
+
+function scoreTier(score: number): { label: string; color: string; bg: string; border: string } {
+	if (score >= 80) return { label: "Critical", color: "text-kanagawa-red", bg: "bg-kanagawa-red/15", border: "border-kanagawa-red/40" };
+	if (score >= 60) return { label: "High", color: "text-kanagawa-orange", bg: "bg-kanagawa-orange/15", border: "border-kanagawa-orange/40" };
+	if (score >= 40) return { label: "Medium", color: "text-kanagawa-yellow", bg: "bg-kanagawa-yellow/15", border: "border-kanagawa-yellow/40" };
+	if (score >= 20) return { label: "Low", color: "text-kanagawa-blue", bg: "bg-kanagawa-blue/15", border: "border-kanagawa-blue/40" };
+	return { label: "Info", color: "text-kanagawa-fgDim", bg: "bg-kanagawa-fgDim/10", border: "border-kanagawa-border" };
+}
+
+function scoreBadge(score: number): string {
+	return `${score}/100`;
 }
 
 function AnimatedCounter({
@@ -490,6 +504,7 @@ function Scanner({
 	const [scanProgress, setScanProgress] = useState(0);
 	const [showResult, setShowResult] = useState(false);
 	const [copiedId, setCopiedId] = useState<string | null>(null);
+	const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
 
 	const generateFixPrompt = (finding: Finding) => {
 		const language =
@@ -832,7 +847,16 @@ Do not explain what you would do — provide actual working code.`;
 											.map((finding) => (
 												<div
 													key={finding.id}
-													className={`p-4 sm:p-5 rounded-xl border card-hover ${SEVERITY_STYLES[finding.severity].border} ${SEVERITY_STYLES[finding.severity].bg}`}
+													role="button"
+													tabIndex={0}
+													onClick={() => setSelectedFinding(finding)}
+													onKeyDown={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															e.preventDefault();
+															setSelectedFinding(finding);
+														}
+													}}
+													className={`p-4 sm:p-5 rounded-xl border card-hover cursor-pointer focus:outline-none focus:ring-2 focus:ring-kanagawa-accent ${SEVERITY_STYLES[finding.severity].border} ${SEVERITY_STYLES[finding.severity].bg}`}
 												>
 													<div className="flex items-start gap-3">
 														<SeverityBadge severity={finding.severity} />
@@ -841,9 +865,15 @@ Do not explain what you would do — provide actual working code.`;
 																<span className="text-xs font-mono text-kanagawa-fgDim">
 																	{finding.ruleId}
 																</span>
-																<h4 className="font-medium text-kanagawa-fg truncate">
+																<h4 className="font-medium text-kanagawa-fg truncate flex-1">
 																	{finding.title}
 																</h4>
+																{finding.score !== undefined && (
+																	<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono bg-kanagawa-bg border border-kanagawa-border text-kanagawa-fgMuted">
+																		{scoreBadge(finding.score)}
+																	</span>
+																)}
+																<ChevronRight className="w-4 h-4 text-kanagawa-fgDim shrink-0" />
 															</div>
 															<p className="text-sm text-kanagawa-fgMuted mb-3">
 																{finding.description}
@@ -887,7 +917,166 @@ Do not explain what you would do — provide actual working code.`;
 					</div>
 				</FadeIn>
 			</div>
+
+			<FindingDetailPanel
+				finding={selectedFinding}
+				onClose={() => setSelectedFinding(null)}
+				onCopy={handleCopyPrompt}
+			/>
 		</section>
+	);
+}
+
+function FindingDetailPanel({
+	finding,
+	onClose,
+	onCopy,
+}: {
+	finding: Finding | null;
+	onClose: () => void;
+	onCopy: (f: Finding) => void;
+}) {
+	if (!finding) return null;
+
+	const tier = finding.score !== undefined ? scoreTier(finding.score) : null;
+
+	return (
+		<div
+			role="dialog"
+			aria-modal="true"
+			className="fixed inset-0 z-50 flex justify-end"
+			onClick={onClose}
+		>
+			<div className="absolute inset-0 bg-kanagawa-bg/70 backdrop-blur-sm" />
+			<aside
+				className="relative w-full max-w-md h-full bg-kanagawa-bgSurface border-l border-kanagawa-border overflow-y-auto shadow-2xl"
+				onClick={(e) => e.stopPropagation()}
+			>
+				<header className="sticky top-0 z-10 bg-kanagawa-bgSurface border-b border-kanagawa-border px-5 py-4 flex items-center justify-between gap-3">
+					<div className="flex items-center gap-2 min-w-0">
+						<SeverityBadge severity={finding.severity} />
+						<span className="text-xs font-mono text-kanagawa-fgDim truncate">
+							{finding.ruleId}
+						</span>
+					</div>
+					<button
+						type="button"
+						onClick={onClose}
+						aria-label="Close detail panel"
+						className="p-1.5 rounded-md text-kanagawa-fgMuted hover:bg-kanagawa-bg hover:text-kanagawa-fg transition-colors"
+					>
+						<X className="w-4 h-4" />
+					</button>
+				</header>
+
+				<div className="p-5 space-y-5">
+					{finding.score !== undefined && tier && (
+						<section>
+							<div className={`rounded-lg border ${tier.border} ${tier.bg} px-4 py-3`}>
+								<div className="flex items-baseline justify-between mb-2">
+									<span className={`text-xs font-medium uppercase tracking-wide ${tier.color}`}>
+										Contextual Risk Score
+									</span>
+									<span className={`text-2xl font-semibold tabular-nums ${tier.color}`}>
+										{finding.score}
+										<span className="text-sm text-kanagawa-fgDim ml-0.5">/100</span>
+									</span>
+								</div>
+								<div className="h-1.5 w-full rounded-full bg-kanagawa-bg overflow-hidden">
+									<div
+										className={`h-full ${tier.color.replace("text-", "bg-")} transition-all`}
+										style={{ width: `${finding.score}%` }}
+									/>
+								</div>
+								<p className="text-xs text-kanagawa-fgMuted mt-2">
+									{finding.score === 100
+										? "Capped at 100. Multiple critical context signals stacked."
+										: `Tier: ${tier.label}. Recomputed on every scan.`}
+								</p>
+							</div>
+
+							{finding.riskFactors && finding.riskFactors.length > 0 && (
+								<div className="mt-4">
+									<h3 className="text-xs font-semibold uppercase tracking-wide text-kanagawa-fgDim mb-2">
+										Why this score?
+									</h3>
+									<ul className="space-y-1.5">
+										{finding.riskFactors.map((factor, i) => (
+											<li
+												key={i}
+												className="flex items-start gap-2 text-sm text-kanagawa-fg"
+											>
+												<span className="mt-1.5 w-1 h-1 rounded-full bg-kanagawa-accent shrink-0" />
+												<span>{factor}</span>
+											</li>
+										))}
+									</ul>
+								</div>
+							)}
+						</section>
+					)}
+
+					<section>
+						<h2 className="text-lg font-semibold text-kanagawa-fg mb-2 leading-snug">
+							{finding.title}
+						</h2>
+						<p className="text-sm text-kanagawa-fgMuted leading-relaxed">
+							{finding.description}
+						</p>
+					</section>
+
+					{(finding.filePath || finding.snippet) && (
+						<section>
+							{finding.filePath && (
+								<div className="mb-3">
+									<h3 className="text-xs font-semibold uppercase tracking-wide text-kanagawa-fgDim mb-1">
+										Location
+									</h3>
+									<p className="text-sm font-mono text-kanagawa-fg">
+										{finding.filePath}
+										{finding.lineNumber !== undefined && (
+											<span className="text-kanagawa-fgDim">
+												{" "}:{finding.lineNumber}
+											</span>
+										)}
+									</p>
+								</div>
+							)}
+							{finding.snippet && (
+								<div>
+									<h3 className="text-xs font-semibold uppercase tracking-wide text-kanagawa-fgDim mb-1">
+										Code Snippet
+									</h3>
+									<pre className="p-3 rounded-lg bg-kanagawa-bg border border-kanagawa-border text-xs font-mono text-kanagawa-fg overflow-x-auto whitespace-pre">
+										{finding.snippet}
+									</pre>
+								</div>
+							)}
+						</section>
+					)}
+
+					<section>
+						<h3 className="text-xs font-semibold uppercase tracking-wide text-kanagawa-fgDim mb-2">
+							How to Fix
+						</h3>
+						<div className="p-4 rounded-lg bg-kanagawa-bg border border-kanagawa-border">
+							<p className="text-sm text-kanagawa-fg leading-relaxed">
+								{finding.remediation}
+							</p>
+						</div>
+					</section>
+
+					<button
+						type="button"
+						onClick={() => onCopy(finding)}
+						className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-kanagawa-accent text-kanagawa-bg text-sm font-medium hover:bg-kanagawa-accentSoft transition-colors"
+					>
+						<Copy className="w-4 h-4" />
+						Copy Fix Prompt for AI
+					</button>
+				</div>
+			</aside>
+		</div>
 	);
 }
 

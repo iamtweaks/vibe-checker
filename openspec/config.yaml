@@ -1,0 +1,42 @@
+schema: spec-driven
+
+context: |
+  Project: vibe-checker
+  Tech stack: Next.js 14 App Router, React 18, TypeScript, Prisma, Supabase, Tailwind CSS, better-sqlite3, Node/npm
+  Architecture: App Router web app with API routes under src/app/api, shared utilities in src/lib, scanners in src/lib/scanners, middleware in src/middleware.ts, and Prisma-backed persistence
+  Testing: No configured test runner or test files found; quality gates are lint, type-check, and build
+  Style: TypeScript-first, Next.js conventions, utility modules under src/lib, route handlers for API endpoints, Tailwind for styling
+
+testing:
+  strict_tdd: false
+  runner: none
+  test_command: ""
+  coverage_command: ""
+  coverage_threshold: 0
+  layers:
+    unit: absent
+    integration: absent
+    e2e: absent
+  verification:
+    lint: npm run lint
+    typecheck: npm run type-check
+    build: npm run build
+
+rules:
+  proposal:
+    - Include rollback notes for risky changes.
+  specs:
+    - Use Given/When/Then for scenarios.
+    - Use RFC 2119 language (MUST, SHOULD, MAY).
+  design:
+    - Document route, scanner, and data-flow decisions for complex changes.
+  tasks:
+    - Keep tasks small enough to finish in one session.
+  apply:
+    - Follow existing Next.js and TypeScript patterns.
+    - strict_tdd: false
+    - test_command: ""
+  verify:
+    - Use lint, type-check, and build as current verification gates.
+  archive:
+    - Preserve archived changes under openspec/changes/archive/.

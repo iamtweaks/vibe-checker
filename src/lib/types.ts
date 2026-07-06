@@ -17,6 +17,10 @@ export interface Finding {
   lineNumber?: number
   snippet?: string
   remediation: string
+  /** Contextual risk score 0-100. Higher = more urgent. */
+  score?: number
+  /** Human-readable reasons explaining why the score is what it is. */
+  riskFactors?: string[]
 }
 
 export interface SeverityCounts {

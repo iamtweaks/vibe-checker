@@ -150,7 +150,7 @@ async function insertScan(
  * count we actually inserted; the unique index is a defense in depth in case
  * two scans race on the same finding tuple.
  */
-function buildFindingRows(
+export function buildFindingRows(
 	scanId: string,
 	findings: Finding[],
 ): Array<Record<string, unknown>> {
@@ -170,6 +170,8 @@ function buildFindingRows(
 			line_number: f.lineNumber ?? null,
 			code_snippet: f.snippet ?? null,
 			remediation: f.remediation,
+			score: f.score ?? null,
+			risk_factors: f.riskFactors ?? null,
 		});
 	}
 	return rows;
