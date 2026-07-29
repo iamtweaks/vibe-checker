@@ -1,7 +1,7 @@
 schema: spec-driven
 
 context: |
-  Project: vibe-checker
+  Project: vibecode-scanner
   Tech stack: Next.js 14 App Router, React 18, TypeScript, Prisma, Supabase, Tailwind CSS, better-sqlite3, Node/npm
   Architecture: App Router web app with API routes under src/app/api, shared utilities in src/lib, scanners in src/lib/scanners, middleware in src/middleware.ts, and Prisma-backed persistence
   Testing: No configured test runner or test files found; quality gates are lint, type-check, and build

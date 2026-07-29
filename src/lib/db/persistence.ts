@@ -24,6 +24,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { redactFinding, redactFindings } from "@/lib/redaction";
 import type { Finding, Severity } from "@/lib/types";
 
 export type ScanKind = "github" | "website";
@@ -160,18 +161,19 @@ export function buildFindingRows(
 		const key = `${f.ruleId}::${f.filePath ?? ""}::${f.lineNumber ?? ""}`;
 		if (seen.has(key)) continue;
 		seen.add(key);
+		const finding = redactFinding(f);
 		rows.push({
 			scan_id: scanId,
-			rule_id: f.ruleId,
-			title: f.title,
-			description: f.description,
-			severity: f.severity,
-			file_path: f.filePath ?? null,
-			line_number: f.lineNumber ?? null,
-			code_snippet: f.snippet ?? null,
-			remediation: f.remediation,
-			score: f.score ?? null,
-			risk_factors: f.riskFactors ?? null,
+			rule_id: finding.ruleId,
+			title: finding.title,
+			description: finding.description,
+			severity: finding.severity,
+			file_path: finding.filePath ?? null,
+			line_number: finding.lineNumber ?? null,
+			code_snippet: finding.snippet ?? null,
+			remediation: finding.remediation,
+			score: finding.score ?? null,
+			risk_factors: finding.riskFactors ?? null,
 		});
 	}
 	return rows;
@@ -184,6 +186,7 @@ export function buildFindingRows(
 export async function persistScan(
 	input: PersistScanInput,
 ): Promise<PersistScanResult> {
+	const findings = redactFindings(input.findings);
 	const normalizedUrl = normalizeTargetUrl(input.rawUrl, input.kind);
 
 	const websiteId = await resolveWebsiteId(input.supabase, normalizedUrl);
@@ -195,7 +198,7 @@ export async function persistScan(
 		websiteId,
 		kind: input.kind,
 		normalizedUrl,
-		findingsCount: input.findings.length,
+		findingsCount: findings.length,
 		severityCounts: input.severityCounts,
 		scanDurationMs: input.scanDurationMs,
 	});
@@ -203,11 +206,11 @@ export async function persistScan(
 		return { websiteId, scanId: null, findingsInserted: 0 };
 	}
 
-	if (input.findings.length === 0) {
+	if (findings.length === 0) {
 		return { websiteId, scanId, findingsInserted: 0 };
 	}
 
-	const rows = buildFindingRows(scanId, input.findings);
+	const rows = buildFindingRows(scanId, findings);
 	if (rows.length === 0) {
 		return { websiteId, scanId, findingsInserted: 0 };
 	}

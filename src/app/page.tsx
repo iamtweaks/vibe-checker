@@ -252,7 +252,7 @@ function Header() {
 						<Shield className="w-5 h-5 text-kanagawa-bg" />
 					</div>
 					<span className="font-semibold text-base md:text-lg tracking-tight text-kanagawa-fg">
-						VibeChecker
+						VibeCode Scanner
 					</span>
 				</a>
 				<nav className="flex items-center gap-4 md:gap-6 text-sm">
@@ -299,7 +299,7 @@ function Hero() {
 					<p className="text-lg text-kanagawa-fgMuted mb-8 max-w-2xl mx-auto leading-relaxed">
 						If you built your app with{" "}
 						<strong>Lovable, Bolt, Cursor, Replit,</strong> or{" "}
-						<strong>Google AI Studio</strong>, VibeCheck finds the security
+						<strong>Google AI Studio</strong>, VibeCode Scanner finds the security
 						vulnerabilities that AI code generators commonly introduce.
 					</p>
 				</FadeIn>
@@ -476,7 +476,7 @@ function RealityCheck() {
 							</div>
 							<div>
 								<div className="text-kanagawa-accent font-semibold text-xs md:text-sm mb-2">
-									✅ VibeCheck Catches These Issues
+									✅ VibeCode Scanner Catches These Issues
 								</div>
 								<p className="text-kanagawa-fgMuted text-xs">
 									Free, no signup required, gives you a security grade in
@@ -635,7 +635,7 @@ Do not explain what you would do — provide actual working code.`;
 				msg.toLowerCase().includes("403")
 			) {
 				setError(
-					"🔒 This repository is private. VibeChecker can only scan public repositories.",
+					"🔒 This repository is private. VibeCode Scanner can only scan public repositories.",
 				);
 			} else {
 				setError(msg);
@@ -1090,7 +1090,7 @@ function HowItWorks() {
 							Two Ways to Scan
 						</h2>
 						<p className="text-kanagawa-fgMuted max-w-xl mx-auto text-sm md:text-base">
-							Most security scanners only do one or the other. VibeCheck does
+							Most security scanners only do one or the other. VibeCode Scanner does
 							both.
 						</p>
 					</div>

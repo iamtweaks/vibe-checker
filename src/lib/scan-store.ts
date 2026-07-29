@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { prisma } from './db'
+import { redactFinding, redactFindings, redactTargetUrl } from './redaction'
 import type { Finding, ScanAPIResponse } from './types'
 
 const MAX_SCAN_LIST_LIMIT = 50
@@ -56,19 +57,22 @@ export function normalizeScanTarget(rawUrl: string): string {
 }
 
 function toFindingCreate(finding: Finding) {
+	const redacted = redactFinding(finding)
   return {
-    ruleId: finding.ruleId,
-    severity: finding.severity,
-    title: finding.title,
-    description: finding.description,
-    filePath: finding.filePath ?? null,
-    lineNumber: finding.lineNumber ?? null,
-    snippet: finding.snippet ?? null,
-    remediation: finding.remediation,
+    ruleId: redacted.ruleId,
+    severity: redacted.severity,
+    title: redacted.title,
+    description: redacted.description,
+    filePath: redacted.filePath ?? null,
+    lineNumber: redacted.lineNumber ?? null,
+    snippet: redacted.snippet ?? null,
+    remediation: redacted.remediation,
   }
 }
 
 export async function persistScan(scan: ScanAPIResponse): Promise<void> {
+	const findings = redactFindings(scan.findings)
+  const targetUrl = redactTargetUrl(scan.targetUrl)
   const normalizedUrl = normalizeScanTarget(scan.targetUrl)
   const now = new Date(scan.scannedAt)
 
@@ -83,13 +87,13 @@ export async function persistScan(scan: ScanAPIResponse): Promise<void> {
       create: {
         type: scan.type,
         normalizedUrl,
-        displayUrl: scan.targetUrl,
+        displayUrl: targetUrl,
         firstScannedAt: now,
         lastScannedAt: now,
         scanCount: 1,
       },
       update: {
-        displayUrl: scan.targetUrl,
+        displayUrl: targetUrl,
         lastScannedAt: now,
         scanCount: { increment: 1 },
       },
@@ -99,16 +103,16 @@ export async function persistScan(scan: ScanAPIResponse): Promise<void> {
       data: {
         id: scan.scanId,
         targetId: target.id,
-        targetUrl: scan.targetUrl,
+        targetUrl,
         scanType: scan.type,
-        findingsJson: JSON.stringify(scan.findings),
+        findingsJson: JSON.stringify(findings),
         severityCounts: JSON.stringify(scan.severityCounts),
         scannedFiles: scan.scannedFiles ?? null,
         scannedUrls: scan.scannedUrls ?? null,
         scanDuration: scan.scanDuration ?? null,
         createdAt: now,
         findings: {
-          create: scan.findings.map((finding) => toFindingCreate(finding)),
+          create: findings.map((finding) => toFindingCreate(finding)),
         },
       },
     })
@@ -129,7 +133,7 @@ export function toScanAPIResponse(scan: {
   return {
     scanId: scan.id,
     type: scan.scanType === 'github' ? 'github' : 'website',
-    targetUrl: scan.targetUrl,
+    targetUrl: redactTargetUrl(scan.targetUrl),
     status: 'completed',
     findings: JSON.parse(scan.findingsJson),
     severityCounts: JSON.parse(scan.severityCounts),

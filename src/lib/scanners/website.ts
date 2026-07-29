@@ -4,6 +4,7 @@ import { fetchPublicHtml } from '../network-security'
 import { analyzeHeaders } from './headers'
 import { runPathProbes } from './path-probe'
 import { scoreFinding } from './risk-score'
+import { redactFindings } from '../redaction'
 
 // ============== Type Definitions ==============
 
@@ -72,6 +73,51 @@ function buildFinding(check: SecurityCheck): Finding {
     description: check.description,
     remediation: check.remediation,
   }
+}
+
+/** Analyze only the response already fetched for the scan; this never probes paths. */
+export function analyzePassiveResponseExposure(
+  finalUrl: string,
+  html: string,
+  headers: Record<string, string>,
+): Finding[] {
+  const findings: Finding[] = []
+  const path = safeParseUrl(finalUrl)?.pathname.toLowerCase() ?? ''
+
+  if (/(?:^|\/)(?:swagger(?:\.json)?|api-docs|openapi(?:\.json)?|graphiql|playground)(?:\/|$)/.test(path)) {
+    findings.push({
+      id: crypto.randomUUID(),
+      ruleId: 'WEB-API-DOCS-INFO',
+      severity: 'info',
+      title: 'Production API Documentation Endpoint Observed',
+      description: 'The response is an API documentation or interactive query endpoint. This is informational and should be reviewed for intended production exposure.',
+      remediation: 'Require authentication or disable interactive documentation in production when it reveals privileged operations or internal schemas.',
+    })
+  }
+
+  if (/\.map$/i.test(path) || headers['sourcemap'] || headers['x-sourcemap'] || /sourceMappingURL\s*=\s*\S+/i.test(html)) {
+    findings.push({
+      id: crypto.randomUUID(),
+      ruleId: 'WEB-SOURCEMAP-INFO',
+      severity: 'info',
+      title: 'Source Map Exposure Observed',
+      description: 'The already received response references or serves a source map. This is informational and may reveal source paths or source code depending on build settings.',
+      remediation: 'Disable public production source maps unless they are required for error monitoring, or upload them privately to the monitoring provider.',
+    })
+  }
+
+  if (Object.keys(headers).some(header => /^(?:x-)?debug(?:-|$)/i.test(header))) {
+    findings.push({
+      id: crypto.randomUUID(),
+      ruleId: 'WEB-DEBUG-INFO',
+      severity: 'info',
+      title: 'Debug Response Header Observed',
+      description: 'The received response includes a debug-oriented header. This is informational and should be reviewed to ensure production diagnostics do not reveal sensitive state.',
+      remediation: 'Disable debug headers in production or restrict them to authenticated operational requests.',
+    })
+  }
+
+  return findings
 }
 
 // ============== Security Checks ==============
@@ -263,10 +309,11 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     check: ($: cheerio.CheerioAPI, url: string) => {
       if (!url) return false
       const bodyText = $('body').text().toLowerCase()
-      const debugPatterns = ['debug', 'stack trace', 'error details', 'exception', 'java.io', 'stacktrace', 'error in', 'at ']
+      const debugPatterns = ['debug', 'stack trace', 'error details', 'exception', 'java.io', 'stacktrace', 'error in']
       const hasDebugContent = debugPatterns.some(p => bodyText.includes(p))
+      const hasStackFrame = /^\s*at\s+[\w$.[\]<>-]+(?:\s*\([^()\r\n]+:\d+(?::\d+)?\)|\s+in\s+[^:\r\n]+:\s*line\s+\d+)/im.test(bodyText)
       const debugUrls = /(\/debug|\/trace|\/actuator|\/env|\/config|\/actuator\/health)/i.test(url)
-      return hasDebugContent || debugUrls
+      return hasDebugContent || hasStackFrame || debugUrls
     },
     remediation: 'Disable debug mode in production. Remove debug endpoints or restrict access.',
   },
@@ -506,6 +553,10 @@ export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
     } catch (headerError) {
       console.error('Header analysis failed:', headerError)
     }
+
+    for (const f of analyzePassiveResponseExposure(finalUrl, html, headers)) {
+      findings.push({ ...f, ...scoreFinding(f, { filePath: finalUrl }) })
+    }
   } catch (error: any) {
     if (error.name === 'TimeoutError') {
       throw new Error(`Website scan timed out after 15 seconds. Try a faster website.`)
@@ -528,7 +579,7 @@ export async function scanWebsite(url: string): Promise<WebsiteScanResult> {
   }
 
   return {
-    findings,
+    findings: redactFindings(findings),
     severityCounts,
     scannedUrls: 1,
     scanDuration: Date.now() - startTime,

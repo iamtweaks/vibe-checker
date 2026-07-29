@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "vibe-checker",
+      "name": "vibecode-scanner",
       "dependencies": {
         "@octokit/rest": "^20.1.0",
         "@prisma/adapter-better-sqlite3": "6.19.3",

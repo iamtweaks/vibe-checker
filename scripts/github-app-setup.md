@@ -1,10 +1,10 @@
-# VibeChecker GitHub App Setup
+# VibeCode Scanner GitHub App Setup
 
-This document explains how to register and configure the VibeChecker GitHub App for automatic PR scanning.
+This document explains how to register and configure the VibeCode Scanner GitHub App for automatic PR scanning.
 
 ## Overview
 
-The VibeChecker GitHub App listens to `pull_request` webhook events and automatically scans changed files for:
+The VibeCode Scanner GitHub App listens to `pull_request` webhook events and automatically scans changed files for:
 - Debug statements (`console.log`, etc.)
 - TODOs without issue references
 - Hardcoded secrets and credentials
@@ -33,7 +33,7 @@ The VibeChecker GitHub App listens to `pull_request` webhook events and automati
 2. Click "New GitHub App"
 3. Fill in the following:
 
-**GitHub App Name:** `VibeChecker` (must be unique across GitHub)
+**GitHub App Name:** `VibeCode Scanner` (must be unique across GitHub)
 
 **Homepage URL:** `https://vibecheck.dev`
 
@@ -68,7 +68,7 @@ GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
 # Webhook secret (must match what you set in GitHub)
 GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
 
-# Optional: VibeChecker API URL
+# Optional: VibeCode Scanner API URL
 VIBECHECKER_URL=https://vibecheck.dev
 ```
 
@@ -94,7 +94,7 @@ VIBECHECKER_URL=https://vibecheck.dev
 ## Step 4: Verify Installation
 
 1. Open a test PR in one of the installed repositories
-2. You should see a comment from VibeChecker within a few seconds
+2. You should see a comment from VibeCode Scanner within a few seconds
 
 ## Development with ngrok
 

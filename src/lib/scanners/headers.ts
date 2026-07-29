@@ -298,16 +298,40 @@ function checkPermissionsPolicyWeak(headers: Record<string, string>): boolean {
 	});
 }
 
+function checkWeakCsp(headers: Record<string, string>): boolean {
+	const csp = headers["content-security-policy"]?.toLowerCase();
+	if (!csp) return false;
+	const scriptDirective = csp.match(/(?:^|;)\s*script-src\s+([^;]+)/)?.[1] ?? "";
+	const defaultDirective = csp.match(/(?:^|;)\s*default-src\s+([^;]+)/)?.[1] ?? "";
+	const directive = scriptDirective || defaultDirective;
+	if (!directive) return false;
+
+	const hasNonceOrHash = /'(?:nonce-|sha(?:256|384|512)-)/.test(directive);
+	return /'unsafe-eval'|(?:^|\s)\*(?:\s|$)|\bdata:|(?:^|\s)https?:\s/.test(directive) ||
+		(/'unsafe-inline'/.test(directive) && !hasNonceOrHash);
+}
+
+function checkInsecureSessionCookie(headers: Record<string, string>): boolean {
+	const cookies = headers["set-cookie"] ?? "";
+	if (!/(?:^|[,;]\s*)(?:__host-|__secure-)?(?:session|auth|token|jwt|sid)[^=]*=/i.test(cookies)) {
+		return false;
+	}
+	return !/;\s*secure(?:;|$)/i.test(cookies) ||
+		!/;\s*httponly(?:;|$)/i.test(cookies) ||
+		!/;\s*samesite=(?:lax|strict|none)(?:;|$)/i.test(cookies);
+}
+
 /**
  * Inspect HTTP response headers and emit one Finding per detected misconfiguration.
  *
  * `headers` MUST already be normalized to lowercase keys (see normalizeHeaders).
  * If credentialsAllow is omitted, it is derived from the
- * Access-Control-Allow-Credentials header.
+ * Access-Control-Allow-Credentials header. requestOriginEvidence must come
+ * from an already observed request; this scanner does not send Origin probes.
  */
 export function analyzeHeaders(
 	headers: Record<string, string>,
-	options: { credentialsAllow?: boolean } = {},
+	options: { credentialsAllow?: boolean; requestOriginEvidence?: string } = {},
 ): Finding[] {
 	const credentialsHeader = (
 		headers["access-control-allow-credentials"] ?? ""
@@ -336,6 +360,32 @@ export function analyzeHeaders(
 		});
 	}
 
+	if (safe(() => checkWeakCsp(headers))) {
+		findings.push({
+			id: crypto.randomUUID(),
+			ruleId: "WEB-019",
+			severity: "high",
+			title: "Weak Content-Security-Policy",
+			description:
+				"The received CSP permits unsafe script execution or broad script sources. This weakens browser-side protection against injected scripts.",
+			remediation:
+				"Use a strict script-src with self plus nonces or hashes. Remove unsafe-eval, avoid unsafe-inline, and do not allow wildcard or data: script sources.",
+		});
+	}
+
+	if (safe(() => checkInsecureSessionCookie(headers))) {
+		findings.push({
+			id: crypto.randomUUID(),
+			ruleId: "WEB-020",
+			severity: "high",
+			title: "Session Cookie Missing Security Attributes",
+			description:
+				"A session-like cookie in the received response is missing Secure, HttpOnly, or SameSite. The response alone cannot prove exploitability, but the cookie should be hardened before production use.",
+			remediation:
+				"Set Secure, HttpOnly, and SameSite=Lax or Strict on session cookies. Use SameSite=None only when cross-site use is required and the cookie is Secure.",
+		});
+	}
+
 	if (
 		credentialsAllow &&
 		safe(() => /^[\s*,]+$|^null$/i.test(headers["access-control-allow-origin"] ?? ""))
@@ -343,12 +393,29 @@ export function analyzeHeaders(
 		findings.push({
 			id: crypto.randomUUID(),
 			ruleId: "WEB-018",
-			severity: "critical",
+			severity: "high",
 			title: "CORS Wildcard Combined With Credentials",
 			description:
-				"Access-Control-Allow-Origin is '*' or 'null' while Access-Control-Allow-Credentials is 'true'. Browsers will reject this combination, but misconfigured APIs sometimes drop the credentials check, exposing user data cross-origin.",
+				"Access-Control-Allow-Origin is '*' or 'null' while Access-Control-Allow-Credentials is 'true'. Browsers reject this combination, so this is a high-confidence configuration defect rather than proof that credentialed data is readable cross-origin.",
 			remediation:
 				"Either remove Access-Control-Allow-Credentials: true, or set Access-Control-Allow-Origin to a specific trusted origin (no wildcard).",
+		});
+	}
+
+	if (
+		credentialsAllow &&
+		options.requestOriginEvidence &&
+		headers["access-control-allow-origin"]?.trim() === options.requestOriginEvidence
+	) {
+		findings.push({
+			id: crypto.randomUUID(),
+			ruleId: "WEB-021",
+			severity: "high",
+			title: "Credentialed CORS Reflects the Request Origin",
+			description:
+			"The received response reflected an evidenced request Origin while allowing credentials. Treat this as a configuration review finding unless the origin is verified against a trusted allowlist.",
+			remediation:
+				"Validate Origin against an explicit server-side allowlist before returning Access-Control-Allow-Origin. Do not reflect arbitrary origins when credentials are enabled.",
 		});
 	}
 

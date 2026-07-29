@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript interfaces for VibeChecker scanners
+ * Shared TypeScript interfaces for VibeCode Scanner scanners
  * Centralizes types to ensure consistency across scanners, API routes, and PDF generation
  */
 
@@ -44,7 +44,14 @@ export interface GitHubScanResult {
   findings: Finding[]
   severityCounts: SeverityCounts
   scannedFiles: number
+  profile: RepositoryProfile
   scanDuration?: number
+}
+
+export interface RepositoryProfile {
+  kind: 'web-application' | 'unknown'
+  /** Explicit project artifacts only; this does not identify repository authors. */
+  aiAssistanceEvidence: string[]
 }
 
 // ============== API Types ==============

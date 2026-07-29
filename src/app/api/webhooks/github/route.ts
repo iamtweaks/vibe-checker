@@ -248,14 +248,14 @@ export async function POST(request: NextRequest) {
 
 		let comment: string;
 		if (allFindings.length === 0) {
-			comment = `## ✅ VibeChecker Scan Complete
+			comment = `## ✅ VibeCode Scanner Scan Complete
 
 No issues found in PR #${pullNumber}.
 
 ---
-*Scanned by [VibeChecker](${process.env.VIBECHECKER_URL || "https://vibecheck.dev"}) GitHub App*`;
+*Scanned by [VibeCode Scanner](${process.env.VIBECHECKER_URL || "https://vibecheck.dev"}) GitHub App*`;
 		} else {
-			comment = `## 🔍 VibeChecker Scan Results
+			comment = `## 🔍 VibeCode Scanner Scan Results
 
 Found **${allFindings.length}** issue(s) in PR #${pullNumber}:\n`;
 			if (errorCount > 0) comment += `- 🔴 ${errorCount} error(s)\n`;
@@ -288,7 +288,7 @@ Found **${allFindings.length}** issue(s) in PR #${pullNumber}:\n`;
 				comment += "\n";
 			}
 
-			comment += `---\n*Scanned by [VibeChecker](${process.env.VIBECHECKER_URL || "https://vibecheck.dev"}) GitHub App*`;
+			comment += `---\n*Scanned by [VibeCode Scanner](${process.env.VIBECHECKER_URL || "https://vibecheck.dev"}) GitHub App*`;
 		}
 
 		await postPRComment(owner, repo, pullNumber, comment, accessToken);
@@ -313,7 +313,7 @@ export async function GET(request: NextRequest) {
 	return NextResponse.json(
 		{
 			status: "ok",
-			service: "VibeChecker GitHub Webhook",
+			service: "VibeCode Scanner GitHub Webhook",
 		},
 		{ headers: buildCorsHeaders(request, "GET, OPTIONS") },
 	);

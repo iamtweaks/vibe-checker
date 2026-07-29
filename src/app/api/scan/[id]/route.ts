@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { buildCorsHeaders } from '@/lib/security-headers'
+import { redactTargetUrl } from '@/lib/redaction'
 import { getScanById } from '@/lib/scan-store'
 
 
@@ -47,5 +48,6 @@ export async function GET(
   return NextResponse.json({
     success: true,
     ...scan,
+    targetUrl: redactTargetUrl(scan.targetUrl),
   }, { headers: buildCorsHeaders(request) })
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildCorsHeaders } from '@/lib/security-headers'
 import { prisma } from '@/lib/db'
+import { redactTargetUrl } from '@/lib/redaction'
 import { getApiKeyFromHeaders, isAdminApiKey } from '@/lib/scan-store'
 
 
@@ -44,8 +45,9 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.scan.count({ where })
 
-    const scansWithParsedCounts = scans.map((scan: { severityCounts: string }) => ({
+    const scansWithParsedCounts = scans.map((scan: { targetUrl: string; severityCounts: string }) => ({
       ...scan,
+      targetUrl: redactTargetUrl(scan.targetUrl),
       severityCounts: JSON.parse(scan.severityCounts),
     }))
 

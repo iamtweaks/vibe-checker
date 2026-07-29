@@ -105,7 +105,7 @@ self.__SERVER_FILES_MANIFEST={
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/home/super/Documents/coding/cybersecurity/vibe-checker",
+    "outputFileTracingRoot": "/home/federico/Documents/coding/cybersecurity/vibecode-scanner",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -305,11 +305,11 @@ self.__SERVER_FILES_MANIFEST={
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.mjs",
     "turbopack": {
-      "root": "/home/super/Documents/coding/cybersecurity/vibe-checker"
+      "root": "/home/federico/Documents/coding/cybersecurity/vibecode-scanner"
     },
     "distDirRoot": ".next"
   },
-  "appDir": "/home/super/Documents/coding/cybersecurity/vibe-checker",
+  "appDir": "/home/federico/Documents/coding/cybersecurity/vibecode-scanner",
   "relativeAppDir": "",
   "files": [
     ".next/package.json",
