@@ -6,38 +6,50 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        /* === Terminal Hacker (phosphor + hazard) === */
         kanagawa: {
-          bg: '#1F1F28',
-          surface: '#2A2A37',
-          surface2: '#363646',
-          border: '#54546D',
-          fg: '#DCD7BA',
-          fgMuted: '#C8C093',
-          fgDim: '#727169',
-          accent: '#7E9CD8',
-          accentSoft: '#9CABCA',
-          violet: '#957FB8',
-          pink: '#D27E99',
-          red: '#E82424',
-          peach: '#FF5D62',
-          orange: '#FFA066',
-          yellow: '#FF9E3B',
-          green: '#98BB6C',
-          aqua: '#7AA89F',
-          teal: '#7FB4CA',
-          blue: '#658594',
+          bg: '#050505',          // near-pure black terminal
+          surface: '#0A0F0A',     // one step, phosphor-tinted
+          surface2: '#0F1A0F',    // two steps
+          border: '#1F3A1F',      // dim phosphor for hairlines
+          fg: '#00FF41',          // primary phosphor green
+          fgMuted: '#33CC55',     // secondary phosphor
+          fgDim: '#1F8A2F',       // dim phosphor (inactive)
+          accent: '#FF0033',      // hazard red (severity / CTAs)
+          accentSoft: '#FF3355',
+          violet: '#FF0033',
+          pink: '#FF3355',
+          red: '#FF0033',
+          peach: '#FF5577',
+          orange: '#FF8800',
+          yellow: '#FFD700',
+          green: '#00FF41',
+          aqua: '#00CCAA',
+          teal: '#00AAAA',
+          blue: '#0088CC',
         },
         severity: {
-          critical: '#E82424',
-          high: '#FF5D62',
-          medium: '#FF9E3B',
-          low: '#7FB4CA',
-          info: '#727169',
+          critical: '#FF0033',    // hazard red — alarm
+          high: '#FF8800',        // warning amber
+          medium: '#FFD700',      // gold
+          low: '#00CCAA',         // calm phosphor-aqua
+          info: '#1F8A2F',        // dim phosphor
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      borderRadius: {
+        none: '0',
+        DEFAULT: '0',
+        sm: '0',
+        md: '0',
+        lg: '0',
+        xl: '0',
+        '2xl': '0',
+        '3xl': '0',
+        full: '0',
       },
     },
   },
