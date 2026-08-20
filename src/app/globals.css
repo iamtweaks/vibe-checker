@@ -3,25 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --bg: #1F1F28;
-  --surface: #2A2A37;
-  --surface-2: #363646;
-  --border: #54546D;
-  --fg: #DCD7BA;
-  --fg-muted: #C8C093;
-  --fg-dim: #727169;
-  --accent: #7E9CD8;
-  --accent-soft: #9CABCA;
-  --violet: #957FB8;
-  --pink: #D27E99;
-  --red: #E82424;
-  --peach: #FF5D62;
-  --orange: #FFA066;
-  --yellow: #FF9E3B;
-  --green: #98BB6C;
-  --aqua: #7AA89F;
-  --teal: #7FB4CA;
-  --blue: #658594;
+  --bg: #f4f4f0;
+  --surface: #eae8e3;
+  --surface-2: #dcdad3;
+  --border: #050505;
+  --fg: #050505;
+  --fg-muted: #2a2a2a;
+  --fg-dim: #707070;
+  --accent: #e61919;
+  --accent-soft: #ff2a2a;
+  --violet: #1a1a1a;
+  --pink: #2a2a2a;
+  --red: #e61919;
+  --peach: #ff2a2a;
+  --orange: #c41414;
+  --yellow: #b8941a;
+  --green: #2a8a1a;
+  --aqua: #1a6a6a;
+  --teal: #1a5a8a;
+  --blue: #1a3a8a;
 }
 
 * {
@@ -388,4 +388,94 @@ body {
 
 .border-glow:hover::before {
   opacity: 0.6;
+}
+
+/* === Industrial Brutalism overrides === */
+/* All radii → 0 globally (Tailwind config catches most; this catches raw CSS) */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
+
+/* Spinner needs round — keep its radius */
+.spinner-kanagawa,
+.spinner-kanagawa::before,
+.spinner-kanagawa::after {
+  border-radius: 50% !important;
+}
+
+/* Kill Kanagawa-era gradients and glow on the brutalist page */
+.gradient-text {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: var(--fg) !important;
+}
+.btn-glow::before,
+.btn-scan,
+.progress-gradient {
+  background: var(--accent) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.btn-scan:hover {
+  background: var(--accent-soft) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.shimmer::after,
+.stat-card::before {
+  display: none !important;
+}
+.feature-card:hover,
+.card-hover:hover,
+.stat-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: var(--accent) !important;
+}
+.scan-pulse::after {
+  border-radius: 0 !important;
+  border: 1px solid var(--accent) !important;
+  border-width: 1px !important;
+}
+.glint {
+  width: 6px !important;
+  height: 6px !important;
+  background: var(--accent) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Brutalist utility classes */
+.brut-label {
+  font-family: var(--font-mono, 'JetBrains Mono'), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+.brut-label--accent { color: var(--accent); }
+.brut-bracket::before { content: "[ "; color: var(--fg-dim); }
+.brut-bracket::after  { content: " ]"; color: var(--fg-dim); }
+.brut-rule {
+  border: 0;
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+}
+.brut-display {
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+  text-transform: uppercase;
+  color: var(--fg);
+  font-size: clamp(2.4rem, 6vw, 4.8rem);
+}
+.brut-hairline {
+  background: var(--border);
+  height: 1px;
 }
