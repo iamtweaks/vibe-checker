@@ -128,28 +128,23 @@ describe("VIBECODE-AI-LOW-EFFORT-001 — security TODO/FIXME", () => {
 });
 
 describe("VIBECODE-AI-INPUT-001 — raw SQL with interpolated variable", () => {
-	it("matches prisma.$queryRaw with template interpolation", () => {
+	it("does NOT match Prisma's parameterized tagged template interpolation", () => {
 		const code = `
 const rows = await prisma.$queryRaw\`SELECT * FROM users WHERE id = \${userId}\`
 `;
-		expect(matches("VIBECODE-AI-INPUT-001", code)).toBe(true);
+		expect(matches("VIBECODE-AI-INPUT-001", code)).toBe(false);
 	});
 
-	it("matches sequelize.query with template literal interpolation", () => {
+	it("matches Prisma's unsafe raw query API", () => {
 		const code = `
-const rows = await sequelize.query(\`SELECT * FROM users WHERE email = \${email}\`)
+const rows = await prisma.$queryRawUnsafe(\`SELECT * FROM users WHERE email = \${email}\`)
 `;
 		expect(matches("VIBECODE-AI-INPUT-001", code)).toBe(true);
 	});
 
-	it("does NOT match parameterized query (no interpolation)", () => {
-		const code = `
-const rows = await prisma.$queryRaw\`SELECT * FROM users WHERE id = \${Prisma.sql\`\${userId}\`}\`
-`;
-		// Tagged template is fine; but our regex specifically looks for ${...} in the SQL string
-		// For this test we use a no-interp form which should not match
-		const code2 = `const rows = await prisma.$queryRaw\`SELECT * FROM users WHERE active = true\``;
-		expect(matches("VIBECODE-AI-INPUT-001", code2)).toBe(false);
+	it("matches SQL string building", () => {
+		const code = `const userQuery = 'SELECT * FROM users WHERE id = ' + userId`;
+		expect(matches("VIBECODE-AI-INPUT-001", code)).toBe(true);
 	});
 
 	it("does NOT match a non-raw query", () => {

@@ -8,7 +8,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'VibeChecker - Free Vibe Coding Security Scanner',
+  title: 'VibeCode Scanner - Free Vibe Coding Security Scanner',
   description: 'Free security scanner for vibe-coded apps. Find critical vulnerabilities before they become breaches.',
 }
 

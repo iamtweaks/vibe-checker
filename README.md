@@ -1,4 +1,4 @@
-# VibeChecker 🔍
+# VibeCode Scanner 🔍
 
 **Free Vibe Coding Security Scanner & Solo Founder Tools**
 
@@ -7,7 +7,7 @@
 
 > *Ship faster. Audit smarter.*
 
-VibeChecker is a free security scanner designed for solo founders and developers building apps with vibe-coding tools (Lovable, Cursor, Bolt, v0, etc.). Find critical vulnerabilities before they become breaches.
+VibeCode Scanner is a free security scanner designed for solo founders and developers building apps with vibe-coding tools (Lovable, Cursor, Bolt, v0, etc.). Find critical vulnerabilities before they become breaches.
 
 ## ✨ Features
 
@@ -31,7 +31,7 @@ VibeChecker is a free security scanner designed for solo founders and developers
 ```bash
 # Clone the repository
 git clone https://github.com/iamtweaks/vibe-checker.git
-cd vibe-checker
+cd vibecode-scanner
 
 # Install dependencies
 npm install
@@ -56,7 +56,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 📁 Project Structure
 
 ```
-vibe-checker/
+vibecode-scanner/
 ├── src/
 │   ├── app/                    # Next.js App Router
 │   │   ├── page.tsx           # Landing page
@@ -112,7 +112,7 @@ vibe-checker/
 
 ## 🌐 REST API
 
-VibeChecker provides a REST API for programmatic access.
+VibeCode Scanner provides a REST API for programmatic access.
 
 ### Base URL
 

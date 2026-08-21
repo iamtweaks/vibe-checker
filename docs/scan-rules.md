@@ -1,8 +1,8 @@
-# VibeChecker - Security Scan Rules
+# VibeCode Scanner - Security Scan Rules
 
 ## Overview
 
-VibeChecker uses pattern matching and heuristic analysis to detect security vulnerabilities in code repositories and websites. This document details all security rules implemented in the scanner.
+VibeCode Scanner uses pattern matching and heuristic analysis to detect security vulnerabilities in code repositories and websites. This document details all security rules implemented in the scanner.
 
 ---
 
@@ -227,11 +227,27 @@ VibeChecker uses pattern matching and heuristic analysis to detect security vuln
   - `maxRequests: Infinity`
 - **Remediation:** Enable rate limiting on all public endpoints. Use express-rate-limit or a WAF.
 
-### SUPABASE001: Exposed Supabase Credentials
+### SUPABASE001: Exposed Supabase Service Role Key
 - **Severity:** 🔴 Critical
 - **CWE:** CWE-798
-- **Pattern:** Hardcoded Supabase keys in source code
-- **Remediation:** Use environment variables: `process.env.SUPABASE_KEY`. Add .env to .gitignore.
+- **Pattern:** A committed Supabase service role key in source or configuration
+- **False-positive control:** Supabase anon/publishable keys are not reported as secrets. Client-side service role references are reported separately as `SUPABASE-RLS003`.
+- **Remediation:** Keep service role keys server-only, rotate any committed value, and use the anon/publishable key with RLS for browser clients.
+
+### VIBECODE-AI-INPUT-001: Unsafe Prisma Raw SQL
+- **Severity:** 🔴 Critical
+- **CWE:** CWE-89
+- **Pattern:** `$queryRawUnsafe`/`$executeRawUnsafe`, SQL string building, or request-controlled `Prisma.raw` fragments
+- **False-positive control:** `prisma.$queryRaw\`... ${value}\`` is not reported because Prisma's tagged template binds values safely.
+- **Remediation:** Prefer Prisma Client methods or tagged templates. Do not concatenate SQL from input and allowlist identifiers before using `Prisma.raw`.
+
+### GitHub Actions Workflow Rules
+- **GHA-PR-TARGET-001:** `pull_request_target` workflow checks out a pull request-controlled ref.
+- **GHA-RUN-EXPR-001:** A `run` step interpolates pull request-controlled metadata.
+- **GHA-PERMISSIONS-001:** A workflow uses `write-all` or elevated write permissions with `pull_request_target`.
+- **GHA-ACTION-PIN-001:** A third-party action is not pinned to a full commit SHA.
+- **Scope:** Only `.github/workflows/*.yml` and `.yaml` files. These are static review findings, not proof of exploitability.
+- **Remediation:** Prefer `pull_request` for untrusted code, minimize token permissions, avoid shell interpolation, and pin actions to reviewed SHAs.
 
 ### CSRF001: Missing CSRF Protection
 - **Severity:** 🔴 Critical
@@ -257,6 +273,19 @@ VibeChecker uses pattern matching and heuristic analysis to detect security vuln
 - **OWASP:** A05:2025
 - **Header:** Content-Security-Policy
 - **Remediation:** Add CSP header: `Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{random}'; object-src 'none'; base-uri 'self'`
+
+#### WEB-019 to WEB-021: Passive Response Hardening
+- **WEB-019:** Weak CSP with `unsafe-eval`, broad script sources, `data:`, or `unsafe-inline` without a nonce/hash.
+- **WEB-020:** A session-like cookie lacks `Secure`, `HttpOnly`, or `SameSite`.
+- **WEB-021:** A credentialed response reflects the supplied request Origin.
+- **Scope:** These rules inspect only headers already received from the scanned response. Reflective CORS requires the supplied request origin to match the received allow-origin value.
+- **Remediation:** Use strict CSP nonces/hashes, harden session cookies, and validate Origins against an explicit allowlist.
+
+#### Passive Informational Exposure Rules
+- **WEB-API-DOCS-INFO:** The already received response is a production API documentation or interactive query endpoint.
+- **WEB-SOURCEMAP-INFO:** The already received response serves or references a source map.
+- **WEB-DEBUG-INFO:** The already received response includes a debug-oriented header.
+- **Scope:** Informational review only. The website scanner does not probe additional API documentation, source-map, or debug paths for these rules.
 
 #### WEB-002: HSTS Header Missing
 - **Severity:** 🟠 High
@@ -420,7 +449,7 @@ VibeChecker uses pattern matching and heuristic analysis to detect security vuln
 
 ## False Positives
 
-VibeChecker aims to minimize false positives but some may occur:
+VibeCode Scanner aims to minimize false positives but some may occur:
 
 - **SEC-001:** May flag example API keys in documentation
 - **SEC-007:** May flag legitimate logging statements

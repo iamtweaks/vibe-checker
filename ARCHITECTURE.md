@@ -1,12 +1,12 @@
-# VibeChecker Architecture
+# VibeCode Scanner Architecture
 
-Documentation of the VibeChecker security scanner architecture.
+Documentation of the VibeCode Scanner security scanner architecture.
 
 ---
 
 ## Overview
 
-VibeChecker is a free security scanner for vibe-coded applications (built with tools like Lovable, Bolt.new, v0.dev, Cursor). It provides instant security analysis for GitHub repositories and websites, detecting critical vulnerabilities including OWASP Top 10 2025 categories.
+VibeCode Scanner is a free security scanner for vibe-coded applications (built with tools like Lovable, Bolt.new, v0.dev, Cursor). It provides instant security analysis for GitHub repositories and websites, detecting critical vulnerabilities including OWASP Top 10 2025 categories.
 
 ---
 
@@ -89,7 +89,7 @@ src/
 │                    (lib/pdf.ts)                                   │
 │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │
 │  │ Header         │  │ Summary Box    │  │ Findings List  │    │
-│  │ (VibeChecker)  │  │ (severity      │  │ (sorted by    │    │
+│  │ (VibeCode Scanner) │  │ (severity   │  │ (sorted by    │    │
 │  │                │  │  counts)       │  │  severity)     │    │
 │  └────────────────┘  └────────────────┘  └────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
@@ -209,7 +209,7 @@ Rate limit responses include:
 
 Generated PDF reports include:
 
-1. **Header** - VibeChecker branding, generation timestamp
+1. **Header** - VibeCode Scanner branding, generation timestamp
 2. **Target Info** - Scanned URL/repository
 3. **Summary Box** - Severity counts by category
 4. **Findings List** - Sorted by severity (critical first)

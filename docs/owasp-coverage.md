@@ -1,7 +1,7 @@
-# OWASP Top 10 Coverage Map - VibeChecker
+# OWASP Top 10 Coverage Map - VibeCode Scanner
 
 ## Overview
-This document tracks OWASP Top 10 2021 and 2025 coverage for VibeChecker scanner.
+This document tracks OWASP Top 10 2021 and 2025 coverage for VibeCode Scanner.
 
 ## OWASP Top 10 2021
 
@@ -9,10 +9,10 @@ This document tracks OWASP Top 10 2021 and 2025 coverage for VibeChecker scanner
 |----------|----------|--------|----------|
 | **A01 Broken Access Control** | idor, directory-traversal, cors-misconfig | ✅ Done | Partial |
 | **A02 Cryptographic Failures** | https-missing, mixed-content, weak-ssl | ✅ Done | Good |
-| **A03 Injection** | sql-injection, xss-*, cmd-injection, ldap-injection | ✅ Done | Good |
+| **A03 Injection** | sql-injection, SQLI-PRISMA-RAW, VIBECODE-AI-INPUT-001, xss-*, cmd-injection, ldap-injection | ✅ Done | Good |
 | **A04 Insecure Design** | debug-endpoint, missing-rate-limit | ✅ Done | Partial |
-| **A05 Security Misconfiguration** | missing-csp, missing-xfo, headers, permissions | ✅ Done | Good |
-| **A06 Vulnerable Components** | old-dep, cdn-unknown | ⚠️ Partial | Needs enhancement |
+| **A05 Security Misconfiguration** | missing-csp, WEB-019, WEB-020, WEB-021, headers, permissions | ✅ Done | Good |
+| **A06 Vulnerable Components** | old-dep, cdn-unknown | ⚠️ Partial | Static dependency configuration only; no vulnerability database lookup |
 | **A07 Auth Failures** | autocomplete-password, weak-auth | ✅ Done | Good |
 | **A08 Software Integrity** | no-sri, sri-not-used | ✅ Done | Good |
 | **A09 Logging & Monitoring** | no-security-page | ✅ Done | Good |
@@ -24,7 +24,7 @@ This document tracks OWASP Top 10 2021 and 2025 coverage for VibeChecker scanner
 |----------|----------|--------|----------|
 | **A01 Broken Access Control** | (same as 2021 + new patterns) | ✅ | Enhanced |
 | **A02 Cryptographic Failures** | (same as 2021) | ✅ | Good |
-| **A03 Software Supply Chain Failures** | suspicious-cdn, supply-chain-* | ⚠️ Partial | **NEEDS WORK** |
+| **A03 Software Supply Chain Failures** | supply-chain-*, GHA-PR-TARGET-001, GHA-RUN-EXPR-001, GHA-PERMISSIONS-001, GHA-ACTION-PIN-001 | ✅ | Static workflow and dependency configuration review |
 | **A04 Insecure Design** | (same as 2021) | ✅ | Good |
 | **A05 Security Misconfiguration** | +missing-coop, +missing-corp, +missing-coep | ✅ | Good |
 | **A06 Vulnerable Components** | (same as 2021) | ⚠️ Partial | **NEEDS WORK** |

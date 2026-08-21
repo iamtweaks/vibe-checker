@@ -1,4 +1,5 @@
 import { scoreFinding } from "../risk-score";
+import { redactFindings } from "../../redaction";
 
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 
@@ -28,7 +29,7 @@ export interface ScanRule {
 // GitHub Scanner Rules
 // Common Supabase/AI backend credential patterns (checked per file path + content)
 export const SUPABASE_FILE_PATTERNS = [
-	/\.env(?:\.local|\.development|\.production)?$/i,
+	/\.env(?:\.[^/]+)?$/i,
 	/supabase\.ts$/i,
 	/supabase[/\\]client/i,
 	/lib[/\\]supabase/i,
@@ -42,26 +43,9 @@ export function checkSupabaseCredentials(
 ): boolean {
 	const hasSupabaseFile = SUPABASE_FILE_PATTERNS.some((p) => p.test(filePath));
 	if (!hasSupabaseFile) return false;
-	// Simple string-based detection for Supabase keys (avoids regex literal issues)
-	const lower = content.toLowerCase();
-	const indicators = [
-		"supabase_anon_key",
-		"supabase_service_role_key",
-		"supabase_api_key",
-		"sb_",
-		"anon key",
-		"service_role",
-	];
-	const hasIndicator = indicators.some((i) => lower.includes(i));
-	if (!hasIndicator) return false;
-	// Check for JWT-like patterns (base64 encoded)
-	const jwtPattern =
-		/[a-zA-Z0-9_-]{50,}\.eyJ[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,}/g;
-	const hasJwt = jwtPattern.test(content);
-	// Check for long base64-like strings that could be keys
-	const longKeyPattern = /["'][a-zA-Z0-9_-]{40,}["']/g;
-	const hasLongKey = longKeyPattern.test(content);
-	return hasJwt || hasLongKey;
+	return /(?:SUPABASE_SERVICE_ROLE(?:_KEY)?|serviceRoleKey|service_role)\s*[:=]\s*["']?(?:sb_(?:secret|service_role)_[A-Za-z0-9_-]{12,}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/i.test(
+		content,
+	);
 }
 
 // ============== SUPABASE RLS RULES (OWASP A01:2021) ==============
@@ -307,12 +291,11 @@ function checkCodeInjectionSink(content: string, filePath: string): boolean {
 }
 
 // ============== SQL INJECTION PREVENTION (OWASP Cheat Sheet) ==============
-// Prisma raw queries that interpolate parameters instead of using $queryRaw template.
+// Prisma tagged templates parameterize interpolated values. The unsafe APIs,
+// dynamically built SQL, and untrusted Prisma.raw fragments do not.
 function checkPrismaRawInjection(content: string, filePath: string): boolean {
 	if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) return false;
-	return /\$executeRaw\s*\(\s*[`'"][^`'"]*\$\{|Prisma\.sql\s*\(\s*[`'"][^`'"]*\bSELECT\b[^`'"]*\$\{/i.test(
-		content,
-	);
+	return /prisma\.\$(?:query|execute)RawUnsafe\s*\(|Prisma\.raw\s*\(\s*(?:`[^`]*\$\{|[^)]*(?:req(?:uest)?\.|userInput|input|searchParams|params\.))|(?:const|let|var)\s+\w*(?:sql|query)\w*\s*=\s*["'`][^;\n]*(?:\+|\$\{)/i.test(content);
 }
 
 // ============== CRYPTO / SECRETS (hardening beyond existing rules) ==============
@@ -338,15 +321,88 @@ function checkMutatingRouteWithoutCsrf(content: string, filePath: string): boole
 	return !hasCsrf;
 }
 
+function isGitHubActionsWorkflow(filePath: string): boolean {
+	return /(^|[/\\])\.github[/\\]workflows[/\\][^/\\]+\.ya?ml$/i.test(filePath);
+}
+
+function checkGitHubActionsWorkflow(content: string, filePath: string): Finding[] {
+	if (!isGitHubActionsWorkflow(filePath)) return [];
+
+	const findings: Finding[] = [];
+	const isPullRequestTarget = /(?:^|\n)\s*on\s*:\s*(?:pull_request_target\b|\[[^\]]*\bpull_request_target\b[^\]]*\])|(?:^|\n)\s*pull_request_target\s*:/m.test(content);
+	const untrustedCheckout = /uses\s*:\s*actions\/checkout@[^\s]+[\s\S]{0,500}?\bref\s*:\s*\$\{\{\s*github\.event\.pull_request\.(?:head\.|head_ref\b)/i.test(content);
+	const untrustedRunExpression = /\brun\s*:\s*(?:[>|][-+]?\s*)?[\s\S]{0,500}?\$\{\{\s*github\.event\.pull_request\.(?:title|body|head\.(?:ref|label)|base\.(?:ref|label))/i.test(content);
+	const writeAllPermissions = /\bpermissions\s*:\s*write-all\b/i.test(content);
+	const elevatedTargetPermissions = isPullRequestTarget && /\bpermissions\s*:[\s\S]{0,300}?\b(?:actions|contents|issues|packages|pull-requests)\s*:\s*write\b/i.test(content);
+	const unpinnedAction = /\buses\s*:\s*(?!\.\/)([^\s@]+)@([A-Za-z0-9._/-]+)/g;
+
+	function add(ruleId: string, severity: Severity, title: string, description: string, remediation: string): void {
+		findings.push({
+			id: `${ruleId}-${findings.length}`,
+			ruleId,
+			severity,
+			title,
+			description,
+			filePath,
+			remediation,
+		});
+	}
+
+	if (isPullRequestTarget && untrustedCheckout) {
+		add(
+			"GHA-PR-TARGET-001",
+			"high",
+			"pull_request_target Checks Out an Untrusted Pull Request Ref",
+			"The workflow runs with the target repository's permissions and checks out a pull request-controlled ref. Untrusted code can then access workflow credentials or write permissions.",
+			"Use pull_request for untrusted pull request code. If pull_request_target is required, never check out pull request head refs and keep permissions read-only.",
+		);
+	}
+
+	if (untrustedRunExpression) {
+		add(
+			"GHA-RUN-EXPR-001",
+			"high",
+			"Untrusted Pull Request Expression Used in run",
+			"A shell run step interpolates pull request-controlled metadata. Shell parsing can turn that metadata into commands or arguments.",
+			"Pass untrusted values through an environment variable and quote it, or process them with an action that does not invoke a shell.",
+		);
+	}
+
+	if (writeAllPermissions || elevatedTargetPermissions) {
+		add(
+			"GHA-PERMISSIONS-001",
+			"high",
+			"GitHub Actions Workflow Requests Excess Write Permissions",
+			"The workflow requests write-all permissions or write permissions on a pull_request_target workflow. The received workflow alone cannot prove a safe trust boundary.",
+			"Set permissions to the smallest read-only scope by default. Grant a narrowly scoped write permission only to an isolated, trusted job.",
+		);
+	}
+
+	for (const match of content.matchAll(unpinnedAction)) {
+		const action = match[1];
+		const ref = match[2];
+		if (/^[a-f0-9]{40}$/i.test(ref)) continue;
+		add(
+			"GHA-ACTION-PIN-001",
+			"medium",
+			"GitHub Action Is Not Pinned to a Commit SHA",
+			`The action ${action}@${ref} is mutable. A changed tag can alter the code executed by CI without a repository change.`,
+			"Pin third-party actions to a full commit SHA and use Dependabot or Renovate to review updates.",
+		);
+	}
+
+	return findings;
+}
+
 export const GITHUB_SCANNER_RULES: ScanRule[] = [
 	{
 		id: "SUPABASE001",
 		pattern:
-			/(?:SUPABASE|supabase)[_-]?(?:ANON|SERVICE[_-]?ROLE|KEY|URL)[^\n]{0,50}["'][a-zA-Z0-9_-]{20,}["']/gi,
+			/(?:SUPABASE_SERVICE_ROLE(?:_KEY)?|serviceRoleKey|service_role)\s*[:=]\s*["']?(?:sb_(?:secret|service_role)_[A-Za-z0-9_-]{12,}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/gi,
 		severity: "critical",
-		title: "Exposed Supabase Credentials",
+		title: "Exposed Supabase Service Role Key",
 		description:
-			"Hardcoded Supabase API keys or service role keys found in source code. This allows full database access bypassing RLS policies.",
+			"A Supabase service role key is committed in source or configuration. This privileged key bypasses Row Level Security and must remain server-side.",
 		remediation:
 			"Use environment variables: process.env.SUPABASE_KEY. Never commit Supabase anon/service keys to version control. Add .env to .gitignore and use a secrets manager for production.",
 	},
@@ -885,7 +941,7 @@ export const GITHUB_SCANNER_RULES: ScanRule[] = [
 	{
 		id: "VIBECODE-AI-SECRET-CLIENT-001",
 		pattern:
-			/(?:NEXT_PUBLIC_|VITE_|REACT_APP_|VITE_PUBLIC_|PUBLIC_)([A-Z][A-Z0-9_]*(?:KEY|SECRET|TOKEN|PASSWORD|API_KEY|ACCESS_TOKEN|PRIVATE_KEY|AUTH))\s*[:=]\s*['"](?:sk_live_|pk_live_|sk_test_|pk_test_|sk-|pk-|gho_|ghp_|ghu_|ghr_|AIza[0-9A-Za-z_-]{20,}|xai-[A-Za-z0-9]{20,}|sk-ant-[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|[A-Fa-f0-9]{32,})/i,
+			/(?:NEXT_PUBLIC_|VITE_|REACT_APP_|VITE_PUBLIC_|PUBLIC_)(?!SUPABASE_(?:ANON|PUBLISHABLE)_KEY\b)([A-Z][A-Z0-9_]*(?:KEY|SECRET|TOKEN|PASSWORD|API_KEY|ACCESS_TOKEN|PRIVATE_KEY|AUTH))\s*[:=]\s*['"](?:sk_live_|pk_live_|sk_test_|pk_test_|sk-|pk-|gho_|ghp_|ghu_|ghr_|AIza[0-9A-Za-z_-]{20,}|xai-[A-Za-z0-9]{20,}|sk-ant-[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|[A-Fa-f0-9]{32,})/i,
 		severity: "critical",
 		title: "Secret Exposed in Client-Side Env Variable",
 		description:
@@ -907,13 +963,13 @@ export const GITHUB_SCANNER_RULES: ScanRule[] = [
 	{
 		id: "VIBECODE-AI-INPUT-001",
 		pattern:
-			/(?:prisma\.\$queryRaw|sql\.query|sequelize\.query|knex\.raw|connection\.query|client\.query|pool\.query)[\s\S]{0,200}?\$\{[^}]+\}/i,
+			/(?:prisma\.\$(?:query|execute)RawUnsafe\s*\(|Prisma\.raw\s*\(\s*(?:`[^`]*\$\{|[^)]*(?:req(?:uest)?\.|userInput|input|searchParams|params\.))|(?:const|let|var)\s+\w*(?:sql|query)\w*\s*=\s*["'`][^;\n]*(?:\+|\$\{))/i,
 		severity: "critical",
 		title: "Raw SQL Query With Interpolated Variable",
 		description:
-			"A raw SQL query uses template-string interpolation (${var}) to splice a value into the statement instead of parameter binding ($1, ?, :name). This is classic SQL injection waiting to happen. AI coding tools assemble raw queries from user input because the prompt said 'look up user by id' without specifying parameterization (CWE-89, OWASP A03:2021).",
+			"A raw SQL query uses an unsafe Prisma API, constructs SQL text from a value, or passes request-controlled data to Prisma.raw. Prisma tagged templates are intentionally excluded because they bind interpolation safely (CWE-89, OWASP A03:2021).",
 		remediation:
-			"Use parameterized queries: prisma.$queryRaw`SELECT * FROM users WHERE id = ${userId}` (Prisma tagged template binds ${} safely). For other drivers, use bound parameters (pg: client.query('... WHERE id = $1', [id])). Never concatenate or template-interpolate user input into a SQL string.",
+			"Use Prisma's tagged template form: prisma.$queryRaw`SELECT * FROM users WHERE id = ${userId}`. Avoid $queryRawUnsafe/$executeRawUnsafe, concatenate no SQL fragments from input, and allowlist identifiers before Prisma.raw.",
 	},
 	{
 		id: "VIBECODE-AI-DEBUG-001",
@@ -953,6 +1009,7 @@ export function scanContent(content: string, filePath: string): Finding[] {
 
 	// Run Supabase RLS checks
 	findings.push(...checkSupabaseRLS(content, filePath));
+	findings.push(...checkGitHubActionsWorkflow(content, filePath));
 
 	// Run Supabase credential check (requires file path context)
 	if (checkSupabaseCredentials(content, filePath)) {
@@ -960,9 +1017,9 @@ export function scanContent(content: string, filePath: string): Finding[] {
 			id: `SUPABASE001-${findings.length}`,
 			ruleId: "SUPABASE001",
 			severity: "critical",
-			title: "Exposed Supabase Credentials",
+			title: "Exposed Supabase Service Role Key",
 			description:
-				"Hardcoded Supabase API keys or service role keys found in source code. This allows full database access bypassing RLS policies.",
+				"A Supabase service role key is committed in source or configuration. This privileged key bypasses Row Level Security and must remain server-side.",
 			filePath,
 			remediation:
 				"Use environment variables: process.env.SUPABASE_KEY. Never commit Supabase anon/service keys to version control. Add .env to .gitignore and use a secrets manager for production.",
@@ -1113,9 +1170,9 @@ export function scanContent(content: string, filePath: string): Finding[] {
 				severity: "critical",
 				title: "Prisma $executeRaw / $queryRaw With String Interpolation (SQLi Cheat Sheet)",
 				description:
-					"`prisma.$executeRaw` / `Prisma.sql` is called with a template literal that interpolates a variable. Prisma cannot parameterize interpolated values, so user input lands directly in the SQL string (CWE-89).",
+					"A Prisma unsafe raw API, dynamically built SQL string, or request-controlled Prisma.raw fragment is present. Prisma tagged templates are intentionally excluded because they bind interpolation safely (CWE-89).",
 				remediation:
-					"Use Prisma's tagged template form: `prisma.$queryRaw`SELECT * FROM users WHERE id = ${userId}``. Better still, use the Prisma Client API (prisma.user.findUnique) which always parameterizes.",
+					"Use Prisma's tagged template form: `prisma.$queryRaw`SELECT * FROM users WHERE id = ${userId}``. Avoid unsafe raw APIs and never concatenate input into SQL. Allowlist any identifier used with Prisma.raw.",
 			},
 		},
 		{
@@ -1204,5 +1261,5 @@ export function scanContent(content: string, filePath: string): Finding[] {
 		}
 	}
 
-	return findings;
+	return redactFindings(findings);
 }

@@ -1,5 +1,5 @@
 var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/webhooks/github/route.js")
-R.c("server/chunks/[root-of-the-server]__06xs49q._.js")
+R.c("server/chunks/[root-of-the-server]__1tjn8rd._.js")
 R.c("server/chunks/node_modules_next_dist_esm_build_templates_app-route_10yuanr.js")
 R.c("server/chunks/src_lib_scanners_rules_index_ts_1ecx9bm._.js")
 R.c("server/chunks/[root-of-the-server]__0xuaoik._.js")

@@ -1,4 +1,4 @@
-# VibeChecker Research - Abril 2026
+# VibeCode Scanner Research - Abril 2026
 
 ## OWASP Top 10 2025 Updates
 
@@ -70,7 +70,7 @@
 
 ---
 
-## Mejoras recomendadas para VibeChecker
+## Mejoras recomendadas para VibeCode Scanner
 
 ### Prioridad ALTA
 1. **Slopsquatting detection** - detectar packages hallucinated

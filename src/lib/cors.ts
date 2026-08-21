@@ -1,5 +1,5 @@
 /**
- * Centralized CORS configuration for VibeChecker API routes.
+ * Centralized CORS configuration for VibeCode Scanner API routes.
  *
  * Security rationale (OWASP A01:2021 - Broken Access Control):
  * - We do NOT use `Access-Control-Allow-Origin: *`. A wildcard origin allows
@@ -17,7 +17,7 @@
 import type { NextRequest } from "next/server";
 
 /**
- * Trusted origins for VibeChecker. The list must be updated when new
+ * Trusted origins for VibeCode Scanner. The list must be updated when new
  * production or preview deployments are added.
  */
 const ALLOWED_ORIGINS: readonly string[] = [

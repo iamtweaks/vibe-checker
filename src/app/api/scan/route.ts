@@ -9,8 +9,10 @@ import { buildCorsHeaders } from '@/lib/security-headers'
 import { validateGitHubUrl, validateWebsiteUrl, checkRateLimit } from '@/lib/validation'
 import { scanGitHubRepo } from '@/lib/scanners/github'
 import { scanWebsite } from '@/lib/scanners/website'
-import type { ScanAPIResponse, SeverityCounts, ValidationResult } from '@/lib/types'
-import { getApiKeyFromHeaders, isAdminApiKey, listRecentScans, persistScan } from '@/lib/scan-store'
+import { createClient } from '@/utils/supabase/server'
+import { buildFindingRows, persistScan } from '@/lib/db/persistence'
+import { redactFindings, redactTargetUrl } from '@/lib/redaction'
+import type { Finding, ScanAPIResponse, SeverityCounts, ValidationResult } from '@/lib/types'
 
 
 // Valid scan types
@@ -22,6 +24,9 @@ export async function OPTIONS(request: NextRequest) {
 
 // GET /api/scan - List recent scans. Disabled by default to avoid leaking targets.
 export async function GET(request: NextRequest) {
+  // Keep the legacy Prisma reader out of the browser scan path. This endpoint
+  // remains available only for admin retrieval until it is migrated separately.
+  const { getApiKeyFromHeaders, isAdminApiKey, listRecentScans } = await import('@/lib/scan-store')
   const adminKey = getApiKeyFromHeaders(request.headers)
   if (!isAdminApiKey(adminKey)) {
     return NextResponse.json(
@@ -123,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Perform scan
-    let result: { findings: any[], severityCounts: SeverityCounts, scannedFiles?: number, scannedUrls?: number, scanDuration?: number }
+    let result: { findings: Finding[], severityCounts: SeverityCounts, scannedFiles?: number, scannedUrls?: number, scanDuration?: number }
 
     if (type === 'github') {
       // Extract GitHub token from header if provided
@@ -138,9 +143,9 @@ export async function POST(request: NextRequest) {
     const response: ScanAPIResponse = {
       scanId,
       type: type as 'github' | 'website',
-      targetUrl: trimmedUrl,
+      targetUrl: redactTargetUrl(trimmedUrl),
       status: 'completed',
-      findings: result.findings,
+      findings: redactFindings(result.findings),
       severityCounts: result.severityCounts as SeverityCounts,
       scannedAt: new Date().toISOString(),
       scannedUrls: result.scannedUrls,
@@ -148,12 +153,39 @@ export async function POST(request: NextRequest) {
       scanDuration: result.scanDuration,
     }
 
-    // Persist scan result for later retrieval by ID. The scan itself still
-    // succeeds if persistence is temporarily unavailable.
+    // UI-initiated scans are complete only after the canonical Supabase writer
+    // has stored both the scan and all of its deduplicated findings.
     try {
-      await persistScan(response)
+      const supabase = await createClient()
+      const persistence = await persistScan({
+        supabase,
+        kind: response.type,
+        rawUrl: trimmedUrl,
+        findings: response.findings,
+        severityCounts: response.severityCounts,
+        scanDurationMs: response.scanDuration ?? 0,
+      })
+      const expectedFindings = buildFindingRows('expected-scan-id', response.findings).length
+
+      if (!persistence.scanId || persistence.findingsInserted !== expectedFindings) {
+        throw new Error('Supabase did not persist the complete scan result')
+      }
     } catch (persistError) {
-      console.error('Failed to persist scan:', persistError)
+      console.error('Failed to persist scan to Supabase:', persistError)
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Scan completed but could not be durably stored. Please try again.',
+          code: 'PERSISTENCE_FAILED',
+        },
+        {
+          status: 503,
+          headers: {
+            ...buildCorsHeaders(request),
+            'X-RateLimit-Remaining': String(rateLimitResult.remainingRequests ?? 0),
+          },
+        },
+      )
     }
 
     return NextResponse.json({

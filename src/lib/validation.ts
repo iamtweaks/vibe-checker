@@ -1,5 +1,5 @@
 /**
- * Input validation utilities for VibeChecker
+ * Input validation utilities for VibeCode Scanner
  * Centralized validation logic to avoid code duplication across API routes
  */
 

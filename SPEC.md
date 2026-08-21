@@ -1,4 +1,4 @@
-# VibeChecker MVP - Specification
+# VibeCode Scanner MVP - Specification
 
 ## Release: v0.1.0 (MVP)
 
@@ -80,7 +80,7 @@
 
 **Footer:**
 - Links: GitHub, Twitter, Privacy, Terms
-- Copyright: © 2026 VibeChecker
+- Copyright: © 2026 VibeCode Scanner
 
 ### Results Page (`/scan/results/[id]`)
 
@@ -221,7 +221,7 @@
 | Error | User Message |
 |-------|--------------|
 | Invalid URL | "Please enter a valid GitHub repository or website URL" |
-| Private repo | "This repository is private. VibeChecker can only scan public repos." |
+| Private repo | "This repository is private. VibeCode Scanner can only scan public repos." |
 | Rate limited | "GitHub rate limit reached. Please wait a few minutes." |
 | Scan timeout | "Scan timed out. The repository might be too large. Try a smaller repo." |
 | Website unreachable | "Could not reach the website. Please check the URL." |

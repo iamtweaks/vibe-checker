@@ -1,8 +1,8 @@
-# VibeChecker - Product Requirements Document (PRD)
+# VibeCode Scanner - Product Requirements Document (PRD)
 
 ## 1. Concept & Vision
 
-**VibeChecker** is a free security scanner and solo founder toolkit designed to help developers and non-technical founders identify vulnerabilities in vibe-coded applications (built with tools like Lovable, Cursor, Bolt, v0, etc.). 
+**VibeCode Scanner** is a free security scanner and solo founder toolkit designed to help developers and non-technical founders identify vulnerabilities in vibe-coded applications (built with tools like Lovable, Cursor, Bolt, v0, etc.).
 
 The platform provides instant, actionable security feedback without requiring sign-up, positioning itself as the first line of defense before paying for expensive professional audits.
 

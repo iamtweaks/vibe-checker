@@ -4,6 +4,7 @@ import { scanWebsite } from "@/lib/scanners/website";
 import { createClient } from "@/utils/supabase/server";
 import { getCorsHeaders, getPreflightHeaders } from "@/lib/cors";
 import { persistScan } from "@/lib/db/persistence";
+import { redactTargetUrl } from "@/lib/redaction";
 import type { ScanAPIResponse, SeverityCounts } from "@/lib/types";
 
 export async function OPTIONS(request: NextRequest) {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
 		const response: ScanAPIResponse = {
 			scanId: crypto.randomUUID(),
 			type: "website",
-			targetUrl: url.trim(),
+			targetUrl: redactTargetUrl(url.trim()),
 			status: "completed",
 			findings: result.findings,
 			severityCounts: result.severityCounts as SeverityCounts,

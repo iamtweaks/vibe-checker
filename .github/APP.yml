@@ -1,4 +1,4 @@
-name: VibeChecker
+name: VibeCode Scanner
 description: Automatically scan pull requests for code quality and security issues
 homepage_url: https://vibecheck.dev
 user_authentication: false
