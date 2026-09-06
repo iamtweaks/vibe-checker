@@ -80,17 +80,17 @@ export async function deleteAccount() {
 
 describe("VIBECODE-AI-SECRET-CLIENT-001 — secret in NEXT_PUBLIC_/VITE_/PUBLIC_", () => {
 	it("matches NEXT_PUBLIC_ with Stripe live key", () => {
-		const code = `NEXT_PUBLIC_STRIPE_KEY = "sk_live_4eC39HqLyjWDarjtT1zdp7dc"`;
+		const code = `NEXT_PUBLIC_STRIPE_KEY = "sk_live_____placeholder_____"`;
 		expect(matches("VIBECODE-AI-SECRET-CLIENT-001", code)).toBe(true);
 	});
 
 	it("matches VITE_ with OpenAI key", () => {
-		const code = `VITE_OPENAI_KEY: "AIzaSyDdI0hCZtK6Y6Y7q6Y6Y6Y6Y6Y6Y6Y6Y6Y6Y"`;
+		const code = `VITE_OPENAI_KEY: "AIzaSy_____placeholder_____"`;
 		expect(matches("VIBECODE-AI-SECRET-CLIENT-001", code)).toBe(true);
 	});
 
 	it("matches PUBLIC_ with GitHub token", () => {
-		const code = `PUBLIC_GITHUB_TOKEN = "ghp_1234567890abcdefghijklmnopqrstuvwxyzAB"`;
+		const code = `PUBLIC_GITHUB_TOKEN = "ghp_12_____placeholder_____"`;
 		expect(matches("VIBECODE-AI-SECRET-CLIENT-001", code)).toBe(true);
 	});
 
@@ -100,7 +100,7 @@ describe("VIBECODE-AI-SECRET-CLIENT-001 — secret in NEXT_PUBLIC_/VITE_/PUBLIC_
 	});
 
 	it("does NOT match server-only env vars", () => {
-		const code = `STRIPE_SECRET_KEY = "sk_live_4eC39HqLyjWDarjtT1zdp7dc"`;
+		const code = `STRIPE_SECRET_KEY = "sk_live_____placeholder_____"`;
 		expect(matches("VIBECODE-AI-SECRET-CLIENT-001", code)).toBe(false);
 	});
 });

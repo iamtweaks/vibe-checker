@@ -14,7 +14,7 @@ VibeChecker uses pattern matching and heuristic analysis to detect security vuln
 - **Pattern:** Matches common API key formats (sk-, pk-, AIza, ghp_, eyJ...)
 - **Files Scanned:** All text files
 - **Example Matches:**
-  - `api_key = "sk-1234567890abcdef"`
+  - `api_key = "<API_KEY_PLACEHOLDER>"`
   - `const API_KEY = process.env.OPENAI_API_KEY`
   - `apiKey: "AIzaSy..."` (Google API)
   - `Authorization: Bearer sk-...` (OpenAI)
