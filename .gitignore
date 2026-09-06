@@ -3,3 +3,11 @@
 .env.local
 .env.*.local
 node_modules
+# Next.js build output
+.next/
+out/
+build/
+dist/
+# Misc
+*.log
+.DS_Store
