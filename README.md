@@ -347,18 +347,15 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## 💛 Donations / Sponsors
 
 If VibeChecker helped you catch a vulnerability before shipping, donations are
-welcome via Bitcoin (segwit, mainnet):
+welcome via Solana (mainnet):
 
 ```
-bc1q d2rpqfv glkzzce5 j7ryey4k 9c9sfefd wf9juax
+8ZNN5bomP4SVfDthfcFgXBSoZAgtngZAcKscddhoPrGA
 ```
 
-Full address: `bc1qd2rpqfvglkzzce5j7ryey4k9c9sfefdwf9juax`
-
-⚠️ The address above is a BloFin exchange deposit address (custodial),
-**not** a personal non-custodial wallet. Funds land in a BloFin pooled
-account. Verify the address matches exactly before sending — on-chain
-transactions are irreversible.
+That's a personal Phantom wallet address (non-custodial — I hold the keys).
+Verify the address matches exactly before sending; on-chain transactions
+are irreversible. SPL tokens accepted (SOL, USDC, etc.).
 
 ---
 
