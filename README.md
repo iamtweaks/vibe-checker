@@ -344,6 +344,22 @@ MIT License - see [LICENSE](LICENSE) for details.
 - Built with Next.js, Tailwind CSS, and love
 - Security rules based on OWASP Top 10 and industry best practices
 
+## 💛 Donations / Sponsors
+
+If VibeChecker helped you catch a vulnerability before shipping, donations are
+welcome via Bitcoin (segwit, mainnet):
+
+```
+bc1q d2rpqfv glkzzce5 j7ryey4k 9c9sfefd wf9juax
+```
+
+Full address: `bc1qd2rpqfvglkzzce5j7ryey4k9c9sfefdwf9juax`
+
+⚠️ The address above is a BloFin exchange deposit address (custodial),
+**not** a personal non-custodial wallet. Funds land in a BloFin pooled
+account. Verify the address matches exactly before sending — on-chain
+transactions are irreversible.
+
 ---
 
 **Made for solo founders who ship fast.** 🚀
